@@ -44,10 +44,22 @@ const customerSchema = mongoose.Schema({
 		required: true,
 		minLength: 6
 	},
-	isActive: {
-		type: Boolean,
-		required: true,
-		default: true
+	status: {
+		isActive: {
+			type: Boolean,
+			required: true,
+			default: true
+		},
+		isVerified: {
+			type: Boolean,
+			required: true,
+			default: false
+		},
+		isResellerApproved: {
+			type: Boolean,
+			required: true,
+			default: false
+		}
 	},
 	tokens: [
 		{
@@ -82,7 +94,10 @@ customerSchema.methods.generateAuthToken = async function() {
 customerSchema.statics.findByCredentials = async (email, password) => {
 	// Search for a Customer by email and password.
 	if (password && email) {
-		const customer = await Customer.findOne({ email })
+		const customer = await Customer.findOne({
+			email: email,
+			'status.isActive': true
+		})
 		if (!customer) {
 			throw new Error('Invalid login credentials')
 		}

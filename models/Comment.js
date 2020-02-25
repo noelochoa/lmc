@@ -9,7 +9,7 @@ const commentSchema = mongoose.Schema({
 		required: true,
 		validate: {
 			validator: val => {
-				return Customer.exists({ _id: val })
+				return Customer.exists({ _id: val, 'status.isVerified': true })
 			},
 			message: 'Customer id is invalid'
 		}

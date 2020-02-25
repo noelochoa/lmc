@@ -41,7 +41,11 @@ exports.loginCustomer = async (req, res) => {
 			})
 		}
 		const token = await customer.generateAuthToken()
-		const user = { name: customer.name, email: customer.email }
+		const user = {
+			name: customer.firstname,
+			email: customer.email,
+			status: customer.status
+		}
 		res.send({ user, token })
 	} catch (error) {
 		res.status(400).send({ error: error.message })
