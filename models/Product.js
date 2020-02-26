@@ -52,6 +52,10 @@ const productSchema = mongoose.Schema({
 			max: 99
 		}
 	},
+	sold: {
+		type: Number,
+		default: 0
+	},
 	minOrderQuantity: {
 		type: Number,
 		required: true,

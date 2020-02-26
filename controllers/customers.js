@@ -1,5 +1,5 @@
 const crypto = require('crypto')
-const nodemailer = require('nodemailer')
+const sgmail = require('@sendgrid/mail')
 const mailhelper = require('../helpers/mailhelper')
 const Customer = require('../models/Customer')
 const Token = require('../models/Token')
@@ -77,24 +77,18 @@ exports.generateToken = async (req, res) => {
 		res.status(200).send({ token: genToken })
 
 		// Send the email (TODO IN CLIENT APP)
-		/*const transporter = nodemailer.createTransport(
-			mailhelper.getMailerService()
-		)
+		/*
+		sgmail.setApiKey(process.env.SENDGRID_API_KEY)
 		const verificationMailOptions = mailhelper.createVerificationMail(
 			req.customer.email,
 			req.customer.firstname,
 			genToken
 		)
-		transporter.sendMail(verificationMailOptions, function(err) {
-			if (err) {
-				return res.status(500).send({ msg: err.message })
-			}
-			res.status(200).send({
-				message:
-					'An email with your verification code has been sent to ' +
-					req.customer.email +
-					'.'
-			})
+		await sgmail.send(verificationMailOptions)
+		res.status(200).send({
+			message:
+				'A verification email has been sent to your email: ' +
+				req.customer.email
 		})*/
 	} catch (error) {
 		res.status(500).send({ error: error.message })

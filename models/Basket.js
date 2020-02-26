@@ -43,12 +43,12 @@ const basketSchema = mongoose.Schema({
 	]
 })
 
-basketSchema.statics.getBasket = async function() {
-	const categories = await Basket.find()
-	if (!categories) {
+basketSchema.statics.getBasket = async customerID => {
+	const basket = await Basket.findOne({ customer: customerID })
+	if (!basket) {
 		throw new Error('Nothing found')
 	}
-	return categories
+	return basket
 }
 
 const Basket = mongoose.model('Basket', basketSchema, 'Basket')
