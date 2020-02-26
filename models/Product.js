@@ -58,9 +58,9 @@ const productSchema = mongoose.Schema({
 		default: 1
 	},
 	created: {
-		type: Number,
+		type: Date,
 		required: true,
-		default: new Date().getTime()
+		default: Date.now
 	},
 	images: [
 		{

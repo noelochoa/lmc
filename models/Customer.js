@@ -16,7 +16,6 @@ const customerSchema = mongoose.Schema({
 	},
 	address: {
 		type: String,
-		required: true,
 		trim: true
 	},
 	email: {
@@ -33,6 +32,7 @@ const customerSchema = mongoose.Schema({
 	phonenumber: {
 		type: String,
 		unique: true,
+		sparse: true,
 		validate: value => {
 			if (!validator.isMobilePhone(value)) {
 				throw new Error('Invalid phone number')
@@ -56,6 +56,11 @@ const customerSchema = mongoose.Schema({
 			default: false
 		},
 		isResellerApproved: {
+			type: Boolean,
+			required: true,
+			default: false
+		},
+		isSMSAllowed: {
 			type: Boolean,
 			required: true,
 			default: false
@@ -133,6 +138,21 @@ customerSchema.statics.getCustomers = async function() {
 		throw new Error('Nothing found')
 	}
 	return Customers
+}
+
+customerSchema.statics.createEntry = async reqBody => {
+	// check and create Customer entry
+	let customer = await Customer.findOne({ email: reqBody.email })
+	if (customer) {
+		throw new Error('Email is already used')
+	} else {
+		customer = new Customer(reqBody)
+		customer.status.isVerified = false
+		customer.status.isResellerApproved = false
+		customer.status.isSMSAllowed = false
+	}
+
+	return customer
 }
 
 const Customer = mongoose.model('Customer', customerSchema, 'Customers')

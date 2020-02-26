@@ -46,9 +46,9 @@ const commentSchema = mongoose.Schema({
 		default: true
 	},
 	created: {
-		type: Number,
+		type: Date,
 		required: true,
-		default: new Date().getTime()
+		default: Date.now
 	}
 })
 

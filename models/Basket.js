@@ -8,14 +8,14 @@ const basketSchema = mongoose.Schema({
 		required: true
 	},
 	created: {
-		type: Number,
+		type: Date,
 		required: true,
-		default: new Date().getTime()
+		default: new Date()
 	},
 	modified: {
-		type: Number,
+		type: Date,
 		required: true,
-		default: new Date().getTime()
+		default: new Date()
 	},
 	products: [
 		{
