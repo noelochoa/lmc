@@ -1,6 +1,6 @@
 const crypto = require('crypto')
 const nodemailer = require('nodemailer')
-const mailhelper = require('../helpers/mailoptions')
+const mailhelper = require('../helpers/mailhelper')
 const Customer = require('../models/Customer')
 const Token = require('../models/Token')
 
@@ -77,8 +77,7 @@ exports.generateToken = async (req, res) => {
 		res.status(200).send({ token: genToken })
 
 		// Send the email (TODO IN CLIENT APP)
-		/*
-		const transporter = nodemailer.createTransport(
+		/*const transporter = nodemailer.createTransport(
 			mailhelper.getMailerService()
 		)
 		const verificationMailOptions = mailhelper.createVerificationMail(
@@ -92,7 +91,7 @@ exports.generateToken = async (req, res) => {
 			}
 			res.status(200).send({
 				message:
-					'A verification email has been sent to ' +
+					'An email with your verification code has been sent to ' +
 					req.customer.email +
 					'.'
 			})
@@ -105,38 +104,37 @@ exports.generateToken = async (req, res) => {
 exports.verifyToken = async (req, res) => {
 	// verify supplied token
 	try {
-		const customer = await Customer.findOne({ _id: req.customer._id })
+		const customer = await Customer.findOne({
+			_id: req.customer._id,
+			'status.isVerified': false
+		})
 		if (customer) {
-			if (customer.status.isVerified) {
-				return res
-					.status(200)
-					.send({ message: 'Customer already verified' })
-			} else {
-				const verification = await Token.findOne({
-					customer: req.customer._id
-				})
-				if (verification) {
-					if (verification.token === req.body.token.toUpperCase()) {
-						// set customer status verified to true
-						customer.status.isVerified = true
-						await customer.save()
-						return res
-							.status(200)
-							.send({ message: 'Customer email is now verified' })
-					} else {
-						return res.status(400).send({
-							error: 'Invalid verification code'
-						})
-					}
+			const verification = await Token.findOne({
+				customer: req.customer._id
+			})
+			if (verification) {
+				if (verification.token === req.body.token.toUpperCase()) {
+					// set customer status verified to true
+					customer.status.isVerified = true
+					await customer.save()
+					return res
+						.status(200)
+						.send({ message: 'Customer account has been verified' })
 				} else {
 					return res.status(400).send({
-						error: 'Supplied verification code has expired'
+						error: 'Verification code does not match'
 					})
 				}
+			} else {
+				return res.status(400).send({
+					error: 'Supplied verification code has expired'
+				})
 			}
+		} else {
+			return res
+				.status(200)
+				.send({ message: 'Customer already verified' })
 		}
-
-		res.status(400).json({ error: 'Invalid verification request' })
 	} catch (error) {
 		res.status(500).send({ error: error.message })
 	}
