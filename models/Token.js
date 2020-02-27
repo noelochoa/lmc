@@ -6,8 +6,12 @@ const tokenSchema = mongoose.Schema({
 	customer: {
 		type: mongoose.Types.ObjectId,
 		ref: 'Customer',
+		required: true
+	},
+	verify: {
+		type: String,
 		required: true,
-		unique: true
+		default: 'email'
 	},
 	token: {
 		type: String,

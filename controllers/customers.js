@@ -1,6 +1,9 @@
 const crypto = require('crypto')
 const sgmail = require('@sendgrid/mail')
+const twilio = require('twilio')
 const mailhelper = require('../helpers/mailhelper')
+const smshelper = require('../helpers/smshelper')
+
 const Customer = require('../models/Customer')
 const Token = require('../models/Token')
 
@@ -64,10 +67,11 @@ exports.generateToken = async (req, res) => {
 			.toUpperCase()
 		// update or create new token document
 		await Token.updateOne(
-			{ customer: req.customer._id },
+			{ customer: req.customer._id, verify: 'email' },
 			{
 				$set: {
 					token: genToken,
+					verify: 'email',
 					created: new Date()
 				}
 			},
@@ -87,7 +91,7 @@ exports.generateToken = async (req, res) => {
 		await sgmail.send(verificationMailOptions)
 		res.status(200).send({
 			message:
-				'A verification email has been sent to your email: ' +
+				'A verification code has been sent to your email: ' +
 				req.customer.email
 		})*/
 	} catch (error) {
@@ -104,7 +108,8 @@ exports.verifyToken = async (req, res) => {
 		})
 		if (customer) {
 			const verification = await Token.findOne({
-				customer: req.customer._id
+				customer: req.customer._id,
+				verify: 'email'
 			})
 			if (verification) {
 				if (verification.token === req.body.token.toUpperCase()) {
@@ -128,6 +133,89 @@ exports.verifyToken = async (req, res) => {
 			return res
 				.status(200)
 				.send({ message: 'Customer already verified' })
+		}
+	} catch (error) {
+		res.status(500).send({ error: error.message })
+	}
+}
+
+exports.generateSMSToken = async (req, res) => {
+	// send SMS verification code to phone number
+	try {
+		const genToken = crypto
+			.randomBytes(3)
+			.toString('hex')
+			.toUpperCase()
+		// update or create new token document
+		await Token.updateOne(
+			{ customer: req.customer._id, verify: 'sms' },
+			{
+				$set: {
+					token: genToken,
+					verify: 'sms',
+					created: new Date()
+				}
+			},
+			{ upsert: true, runValidators: true }
+		)
+
+		// res.status(200).send({ token: genToken })
+		/*
+		const client = new twilio(
+			process.env.TWILIO_ACCOUNT_SID,
+			process.env.TWILIO_AUTH_TOKEN
+		)
+		await client.messages.create(
+			smshelper.createVerificationSMS(
+				req.customer.phonenumber,
+				req.customer.firstname,
+				genToken
+			)
+		)
+		res.status(200).send({
+			message:
+				'A verification code has been sent to your phonenumber: ' +
+				req.customer.phonenumber
+		})*/
+	} catch (error) {
+		res.status(500).send({ error: error.message })
+	}
+}
+
+exports.verifySMSToken = async (req, res) => {
+	// verify phonenumber through supplied code
+	try {
+		const customer = await Customer.findOne({
+			_id: req.customer._id,
+			'status.isSMSVerified': false
+		})
+		if (customer) {
+			const verification = await Token.findOne({
+				customer: req.customer._id,
+				verify: 'sms'
+			})
+			if (verification) {
+				if (verification.token === req.body.token.toUpperCase()) {
+					// set customer status verified to true
+					customer.status.isSMSVerified = true
+					await customer.save()
+					return res.status(200).send({
+						message: 'Customer phone number has been verified'
+					})
+				} else {
+					return res.status(400).send({
+						error: 'Verification code does not match'
+					})
+				}
+			} else {
+				return res.status(400).send({
+					error: 'Supplied verification code has expired'
+				})
+			}
+		} else {
+			return res
+				.status(200)
+				.send({ message: 'Customer already verified phone number' })
 		}
 	} catch (error) {
 		res.status(500).send({ error: error.message })

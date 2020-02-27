@@ -7,16 +7,19 @@ const customerSchema = mongoose.Schema({
 	lastname: {
 		type: String,
 		required: true,
-		trim: true
+		trim: true,
+		max: 256
 	},
 	firstname: {
 		type: String,
 		required: true,
-		trim: true
+		trim: true,
+		max: 256
 	},
 	address: {
 		type: String,
-		trim: true
+		trim: true,
+		max: 512
 	},
 	email: {
 		type: String,
@@ -55,10 +58,22 @@ const customerSchema = mongoose.Schema({
 			required: true,
 			default: false
 		},
+		isSMSVerified: {
+			type: Boolean,
+			required: true,
+			default: false
+		},
 		isResellerApproved: {
 			type: Boolean,
 			required: true,
 			default: false
+		}
+	},
+	notification: {
+		isEmailAllowed: {
+			type: Boolean,
+			required: true,
+			default: true
 		},
 		isSMSAllowed: {
 			type: Boolean,
@@ -149,7 +164,7 @@ customerSchema.statics.createEntry = async reqBody => {
 		customer = new Customer(reqBody)
 		customer.status.isVerified = false
 		customer.status.isResellerApproved = false
-		customer.status.isSMSAllowed = false
+		customer.status.isSMSVerified = false
 	}
 
 	return customer
