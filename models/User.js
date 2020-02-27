@@ -44,7 +44,19 @@ userSchema.pre('save', async function(next) {
 	// Hash the password before saving the user model
 	const user = this
 	if (user.isModified('password')) {
-		user.password = await bcrypt.hash(user.password, 8)
+		user.password = await bcrypt.hash(user.password, 10)
+	}
+	next()
+})
+
+userSchema.pre('updateOne', async function(next) {
+	// Hash the password before saving the user model
+	const updateData = this.getUpdate().$set
+	if (updateData.password) {
+		this.getUpdate().$set.password = await bcrypt.hash(
+			updateData.password,
+			10
+		)
 	}
 	next()
 })

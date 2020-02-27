@@ -100,6 +100,18 @@ customerSchema.pre('save', async function(next) {
 	next()
 })
 
+customerSchema.pre('updateOne', async function(next) {
+	// Hash the password before saving the Customer model
+	const updateData = this.getUpdate().$set
+	if (updateData.password) {
+		this.getUpdate().$set.password = await bcrypt.hash(
+			updateData.password,
+			10
+		)
+	}
+	next()
+})
+
 customerSchema.methods.generateAuthToken = async function() {
 	// Generate an auth token for the Customer
 	const customer = this

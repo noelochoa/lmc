@@ -17,6 +17,7 @@
 		"moment": "^2.24.0",
 		"mongodb": "^3.5.2",
 		"mongoose": "^5.8.11",
+		"speakingurl": "^14.0.1",
 		"twilio": "^3.39.5",
 		"validator": "^12.2.0"
 	},

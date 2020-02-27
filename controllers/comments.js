@@ -57,6 +57,7 @@ exports.editComment = async (req, res) => {
 			for (let op of req.body) {
 				updateProps[op.property] = op.value
 			}
+
 			const result = await Comment.updateOne(
 				{ _id: req.params.commentID },
 				{ $set: updateProps },

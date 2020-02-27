@@ -1,11 +1,16 @@
 const mongoose = require('mongoose')
+const getSlug = require('speakingurl')
 const Category = require('./Category')
-// const validator = require('validator')
 
 const productSchema = mongoose.Schema({
 	name: {
 		type: String,
 		required: true,
+		trim: true
+	},
+	seoname: {
+		type: String,
+		unique: true,
 		trim: true
 	},
 	category: {
@@ -87,27 +92,23 @@ const productSchema = mongoose.Schema({
 	]
 })
 
-productSchema.statics.getProducts = async function() {
-	// Returns all products
-	const products = await Product.find()
-		.sort({ created: -1 })
-		.populate('comments')
-	if (!products) {
-		throw new Error('Nothing found')
+productSchema.pre('save', async function(next) {
+	// Run validator manually on save
+	const product = this
+	if (product.isModified('name')) {
+		product.seoname = getSlug(product.name)
 	}
-	return products
-}
+	next()
+})
 
-productSchema.statics.getActiveProducts = async function() {
-	// Returns all active products
-	const products = await Product.find({ isActive: true }).sort({
-		created: -1
-	})
-	if (!products) {
-		throw new Error('Nothing found')
+productSchema.pre('updateOne', async function(next) {
+	// Run validator manually on save
+	const updateData = this.getUpdate().$set
+	if (updateData.name) {
+		this.getUpdate().$set.seoname = getSlug(updateData.name)
 	}
-	return products
-}
+	next()
+})
 
 productSchema.statics.addNewComment = async (productID, commentID) => {
 	// Push commentID to current list (limit to 10)
