@@ -8,7 +8,7 @@ exports.getCategories = async (req, res) => {
 		if (!categories) {
 			return res.status(404).send({ error: 'Categories not found.' })
 		}
-		res.status(200).json(categories)
+		res.status(200).send(categories)
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
@@ -20,7 +20,7 @@ exports.createCategory = async (req, res) => {
 		const category = new Category(req.body)
 		if (category) {
 			await category.save()
-			res.status(200).json(category)
+			res.status(200).send(category)
 		} else {
 			res.status(500).send({ error: 'Cannot post category.' })
 		}
@@ -47,7 +47,7 @@ exports.patchCategory = async (req, res) => {
 					.status(404)
 					.send({ error: 'Error updating category.' })
 			}
-			res.status(200).json({ message: 'Successfully updated.' })
+			res.status(200).send({ message: 'Successfully updated.' })
 		} catch (error) {
 			res.status(400).send({ error: error.message })
 		}
@@ -78,7 +78,7 @@ exports.deleteCategory = async (req, res) => {
 					.status(404)
 					.send({ error: 'Error removing category.' })
 			}
-			res.status(200).json({ message: 'Successfully removed.' })
+			res.status(200).send({ message: 'Successfully removed.' })
 		} catch (error) {
 			res.status(400).send({ error: error.message })
 		}
@@ -99,7 +99,7 @@ exports.forceDeleteCategory = async (req, res) => {
 					.status(404)
 					.send({ error: 'Error removing category.' })
 			}
-			res.status(200).json({ message: 'Successfully removed.' })
+			res.status(200).send({ message: 'Successfully removed.' })
 		} catch (error) {
 			res.status(400).send({ error: error.message })
 		}

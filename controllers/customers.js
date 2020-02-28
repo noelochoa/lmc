@@ -14,7 +14,7 @@ exports.getAllCustomers = async (req, res) => {
 		if (!customers) {
 			return res.status(404).send({ error: 'Customers not found.' })
 		}
-		res.status(200).json(customers)
+		res.status(200).send(customers)
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
@@ -43,13 +43,14 @@ exports.createNewCustomer = async (req, res) => {
 				},
 				{ upsert: true, runValidators: true }
 			)
-			const token = await customer.generateAuthToken()
+			const csrfToken = crypto.randomBytes(48).toString('hex')
+			const token = await customer.generateAuthToken(csrfToken)
 			const user = {
 				name: customer.firstname,
 				email: customer.email,
 				status: customer.status
 			}
-			res.status(201).send({ user, token, genToken })
+			res.status(201).send({ user, token, genToken, csrfToken })
 		} else {
 			res.status(400).send({ error: 'Cannot create Customer.' })
 		}
@@ -78,7 +79,7 @@ exports.generateToken = async (req, res) => {
 			{ upsert: true, runValidators: true }
 		)
 
-		res.status(200).send({ token: genToken })
+		//res.status(200).send({ token: genToken })
 
 		// Send the email (TODO IN CLIENT APP)
 		/*
@@ -232,13 +233,14 @@ exports.loginCustomer = async (req, res) => {
 				error: 'Login failed! Check authentication credentials'
 			})
 		}
-		const token = await customer.generateAuthToken()
+		const csrfToken = crypto.randomBytes(48).toString('hex')
+		const token = await customer.generateAuthToken(csrfToken)
 		const user = {
 			name: customer.firstname,
 			email: customer.email,
 			status: customer.status
 		}
-		res.send({ user, token })
+		res.send({ user, token, csrfToken })
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
@@ -286,7 +288,7 @@ exports.patchCustomer = async (req, res) => {
 					.status(404)
 					.send({ error: 'Error updating customer details.' })
 			}
-			res.status(200).json({ message: 'Successfully updated.' })
+			res.status(200).send({ message: 'Successfully updated.' })
 		} catch (error) {
 			res.status(400).send({ error: error.message })
 		}

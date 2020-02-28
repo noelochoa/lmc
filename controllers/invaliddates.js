@@ -7,7 +7,7 @@ exports.getDates = async (req, res) => {
 		if (!dates) {
 			return res.status(404).send({ error: 'Date entries not found.' })
 		}
-		res.status(200).json(dates)
+		res.status(200).send(dates)
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
@@ -19,7 +19,7 @@ exports.createInvalidDate = async (req, res) => {
 		const date = new InvalidDate(req.body)
 		if (date) {
 			await date.save()
-			res.status(200).json(date)
+			res.status(200).send(date)
 		} else {
 			res.status(500).send({ error: 'Cannot create Date entry.' })
 		}
@@ -46,7 +46,7 @@ exports.patchInvalidDate = async (req, res) => {
 					.status(404)
 					.send({ error: 'Error updating Date entry.' })
 			}
-			res.status(200).json({ message: 'Successfully updated.' })
+			res.status(200).send({ message: 'Successfully updated.' })
 		} catch (error) {
 			res.status(400).send({ error: error.message })
 		}
@@ -67,7 +67,7 @@ exports.deleteInvalidDate = async (req, res) => {
 					.status(404)
 					.send({ error: 'Error removing Invalid Order Date.' })
 			}
-			res.status(200).json({ message: 'Successfully removed.' })
+			res.status(200).send({ message: 'Successfully removed.' })
 		} catch (error) {
 			res.status(400).send({ error: error.message })
 		}

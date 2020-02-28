@@ -141,7 +141,7 @@ exports.createProduct = async (req, res) => {
 		const product = new Product(req.body)
 		if (product) {
 			await product.save()
-			res.status(200).json(product)
+			res.status(200).send(product)
 		} else {
 			res.status(500).send({ error: 'Cannot save product.' })
 		}
@@ -168,7 +168,7 @@ exports.patchProduct = async (req, res) => {
 					.status(404)
 					.send({ error: 'Error updating product.' })
 			}
-			res.status(200).json({ message: 'Successfully updated.' })
+			res.status(200).send({ message: 'Successfully updated.' })
 		} catch (error) {
 			res.status(400).send({ error: error.message })
 		}

@@ -112,12 +112,16 @@ customerSchema.pre('updateOne', async function(next) {
 	next()
 })
 
-customerSchema.methods.generateAuthToken = async function() {
+customerSchema.methods.generateAuthToken = async function(csrfToken) {
 	// Generate an auth token for the Customer
 	const customer = this
-	const token = jwt.sign({ _id: customer._id }, process.env.JWT_STORE_KEY, {
-		expiresIn: '1 week'
-	})
+	const token = jwt.sign(
+		{ _id: customer._id, _csrf_token: csrfToken },
+		process.env.JWT_STORE_KEY,
+		{
+			expiresIn: '1 week'
+		}
+	)
 	customer.tokens = customer.tokens.concat({ token })
 	await customer.save()
 	return token

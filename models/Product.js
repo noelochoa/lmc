@@ -93,7 +93,7 @@ const productSchema = mongoose.Schema({
 })
 
 productSchema.pre('save', async function(next) {
-	// Run validator manually on save
+	// Create slug for name on save
 	const product = this
 	if (product.isModified('name')) {
 		product.seoname = getSlug(product.name)
@@ -102,7 +102,7 @@ productSchema.pre('save', async function(next) {
 })
 
 productSchema.pre('updateOne', async function(next) {
-	// Run validator manually on save
+	// Recreate slug for name on updateOne
 	const updateData = this.getUpdate().$set
 	if (updateData.name) {
 		this.getUpdate().$set.seoname = getSlug(updateData.name)

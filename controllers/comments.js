@@ -6,7 +6,7 @@ exports.postComment = async (req, res) => {
 		const comment = new Comment(req.body)
 		if (comment) {
 			await comment.postComment()
-			res.status(200).json(comment)
+			res.status(200).send(comment)
 		} else {
 			res.status(500).send({ error: 'Cannot post comment.' })
 		}
@@ -21,7 +21,7 @@ exports.postComment = async (req, res) => {
 		const comment = new Comment(req.body)
 		if (comment) {
 			await comment.postComment()
-			res.status(200).json(comment)
+			res.status(200).send(comment)
 		} else {
 			res.status(500).send({ error: 'Cannot post comment.' })
 		}
@@ -40,7 +40,7 @@ exports.getComments = async (req, res) => {
 			if (!comments) {
 				return res.status(201).send({ error: 'No Comments.' })
 			}
-			res.status(200).json({ comments })
+			res.status(200).send({ comments })
 		} catch (error) {
 			res.status(400).send({ error: error.message })
 		}
@@ -68,7 +68,7 @@ exports.editComment = async (req, res) => {
 					.status(404)
 					.send({ error: 'Error updating comment.' })
 			}
-			res.status(200).json({ message: 'Successfully updated.' })
+			res.status(200).send({ message: 'Successfully updated.' })
 		} catch (error) {
 			res.status(400).send({ error: error.message })
 		}

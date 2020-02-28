@@ -7,7 +7,7 @@ exports.getAllUsers = async (req, res) => {
 		if (!users) {
 			return res.status(404).send({ error: 'Users not found.' })
 		}
-		res.status(200).json(users)
+		res.status(200).send(users)
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
@@ -35,11 +35,9 @@ exports.loginUser = async (req, res) => {
 		const { email, password } = req.body
 		const user = await User.findByCredentials(email, password)
 		if (!user) {
-			return res
-				.status(401)
-				.send({
-					error: 'Login failed! Check authentication credentials'
-				})
+			return res.status(401).send({
+				error: 'Login failed! Check authentication credentials'
+			})
 		}
 		const token = await user.generateAuthToken()
 		res.send({ user, token })
