@@ -13,6 +13,6 @@ router.post(
 )
 router.patch('/:basketID', customerauth, BasketController.patchBasket)
 router.post('/add', customerauth, BasketController.addToBasket)
-router.post('/add/:basketID', customerauth, BasketController.addToBasket)
+// router.post('/add/:basketID', customerauth, BasketController.addToBasket)
 
 module.exports = router

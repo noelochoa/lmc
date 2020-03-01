@@ -223,6 +223,16 @@ exports.verifySMSToken = async (req, res) => {
 	}
 }
 
+exports.getCustomer = async (req, res) => {
+	//Login a registered Customer
+	try {
+		const customer = req.customer
+		res.status(200).send({ customer })
+	} catch (error) {
+		res.status(400).send({ error: error.message })
+	}
+}
+
 exports.loginCustomer = async (req, res) => {
 	//Login a registered Customer
 	try {

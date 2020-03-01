@@ -5,14 +5,14 @@ const comparator = require('../helpers/comparehelper')
 exports.combineCustomerBasket = async (req, res) => {
 	// Merge existing customer with supplied basket ID
 	try {
-		if (req.customer && req.params.basketID) {
+		if (req.customer && req.basket) {
 			let basket = await Basket.findOne({
 				customer: req.customer._id
 			})
 
 			if (!basket) {
 				// No customer basket,
-				basket = await Basket.findOne({ _id: req.params.basketID })
+				basket = await Basket.findOne({ _id: req.basket._id })
 				if (basket) {
 					basket.customer = req.customer._id
 					await basket.save()
@@ -25,8 +25,10 @@ exports.combineCustomerBasket = async (req, res) => {
 				}
 			} else {
 				// Merge customer and supplied baskets
-				basket = await basket.combineBasket(req.params.basketID)
+				basket = await basket.combineBasket(req.basket._id)
 				if (basket) {
+					basket.customer = req.customer._id
+					await basket.save()
 					return res.status(200).send({ basket })
 				} else {
 					res.status(400).send({
@@ -45,26 +47,24 @@ exports.combineCustomerBasket = async (req, res) => {
 exports.getBasket = async (req, res) => {
 	// Get basket
 	try {
-		if (req.customer && !req.params.basketID) {
+		if (req.customer && !req.basket) {
 			const basket = await Basket.getBasketDetails({
 				customer: req.customer._id
 			})
 
-			if (!basket) {
-				return res
-					.status(200)
-					.send({ message: 'Empty shopping basket' })
+			if (basket) {
+				return res.status(200).send({ basket })
 			}
-		} else if (req.params.basketID) {
+		} else if (req.basket) {
 			const basket = await Basket.getBasketDetails({
-				_id: req.params.basketID
+				_id: req.basket._id
 			})
 			if (!basket) {
 				return res.status(404).send({ error: 'Basket not found.' })
 			}
+			return res.status(200).send({ basket })
 		}
-
-		return res.status(200).send({ basket })
+		return res.status(200).send({ message: 'Empty shopping basket' })
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
@@ -88,29 +88,35 @@ exports.addToBasket = async (req, res) => {
 				basket = await basket.addItem(req.body)
 
 				// Combine if supplied basket ID is different
-				if (req.params.basketID && basket._id != req.params.basketID) {
-					basket = await basket.combineBasket(req.params.basketID)
+				if (
+					req.basket &&
+					basket._id.toString() != req.basket._id.toString()
+				) {
+					basket = await basket.combineBasket(req.basket._id)
 				}
-			} else if (req.params.basketID) {
+			} else if (req.basket) {
 				// If not existing basket but has supplied a basket ID
-				basket = await Basket.findUpdateBasket(
-					req.params.basketID,
-					req.body
-				)
+				basket = await Basket.findUpdateBasket(req.basket._id, req.body)
 			} else {
 				// If not existing basket but has supplied a basket ID
 				basket = await Basket.createNewBasket(req.body)
+				basket.customer = req.customer._id
+				await basket.save()
+
+				const token = await basket.generateAccessToken()
+				return res.status(200).send({ basket, token })
 			}
 			basket.customer = req.customer._id
-		} else if (req.params.basketID) {
+		} else if (req.basket) {
 			// If not logged in, but has supplied a basket ID
-			basket = await Basket.findUpdateBasket(
-				req.params.basketID,
-				req.body
-			)
+			basket = await Basket.findUpdateBasket(req.basket._id, req.body)
 		} else {
 			// create new
 			basket = await Basket.createNewBasket(req.body)
+			await basket.save()
+
+			const token = await basket.generateAccessToken()
+			return res.status(200).send({ basket, token })
 		}
 
 		if (basket) {
@@ -126,11 +132,11 @@ exports.addToBasket = async (req, res) => {
 
 exports.patchBasket = async (req, res) => {
 	// Edit basket
-	if (req.params.basketID) {
+	if (req.basket) {
 		try {
 			const { product, quantity, options } = req.body
 			const basket = await Basket.findOne({
-				_id: req.params.basketID
+				_id: req.basket._id
 			})
 
 			const productObj = await Product.findOne({

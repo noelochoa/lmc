@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 const Product = require('../models/Product')
+const jwt = require('jsonwebtoken')
 // const validator = require('validator')
 
 const calcPrice = (qty, base, discount) => {
@@ -82,6 +83,19 @@ basketSchema.pre('save', async function(next) {
 	next()
 })
 
+basketSchema.methods.generateAccessToken = async function() {
+	// Generate token for accessing
+	const basket = this
+	const token = jwt.sign(
+		{ _basket_id: basket._id },
+		process.env.JWT_STORE_KEY,
+		{
+			expiresIn: '1 week'
+		}
+	)
+	return token
+}
+
 basketSchema.methods.addItem = async function(reqBody) {
 	// Push new item into basket
 	const basket = this
@@ -134,10 +148,9 @@ basketSchema.statics.getBasketDetails = async function(searchParam) {
 		{
 			path: 'products.product',
 			populate: {
-				path: 'product'
+				path: 'category'
 			},
-
-			select: 'name isActive pricing images seoname -_id'
+			select: 'name isActive pricing images seoname category -_id'
 		}
 	])
 
