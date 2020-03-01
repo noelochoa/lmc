@@ -1,4 +1,4 @@
-const comparisonhelper = {
+const comparehelper = {
 	isEmpty: obj => {
 		if (typeof obj == 'undefined') return true
 		if (obj == null) return true
@@ -11,8 +11,7 @@ const comparisonhelper = {
 	},
 
 	isEqual: (a1, a2) => {
-		if (comparisonhelper.isEmpty(a1) && comparisonhelper.isEmpty(a2))
-			return true
+		if (comparehelper.isEmpty(a1) && comparehelper.isEmpty(a2)) return true
 
 		return (
 			a1 &&
@@ -23,4 +22,4 @@ const comparisonhelper = {
 	}
 }
 
-module.exports = comparisonhelper
+module.exports = comparehelper

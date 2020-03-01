@@ -2,11 +2,17 @@ const express = require('express')
 const router = express.Router()
 
 const BasketController = require('../controllers/basket')
-// const auth = require('../middleware/auth')
+const customerauth = require('../middleware/customerauth')
 
-router.get('/:basketID', BasketController.getBasket)
-router.patch('/:basketID', BasketController.patchBasket)
-router.post('/add', BasketController.addToBasket)
-router.post('/add/:basketID', BasketController.addToBasket)
+router.get('/', customerauth, BasketController.getBasket)
+router.get('/:basketID', customerauth, BasketController.getBasket)
+router.post(
+	'/merge/:basketID',
+	customerauth,
+	BasketController.combineCustomerBasket
+)
+router.patch('/:basketID', customerauth, BasketController.patchBasket)
+router.post('/add', customerauth, BasketController.addToBasket)
+router.post('/add/:basketID', customerauth, BasketController.addToBasket)
 
 module.exports = router

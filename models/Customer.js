@@ -4,6 +4,11 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 
 const customerSchema = mongoose.Schema({
+	accountType: {
+		type: String,
+		enum: ['regular', 'reseller', 'partner'],
+		default: 'regular'
+	},
 	lastname: {
 		type: String,
 		required: true,

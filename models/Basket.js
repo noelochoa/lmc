@@ -1,10 +1,9 @@
 const mongoose = require('mongoose')
 const Product = require('../models/Product')
-const comparator = require('../helpers/comparisonhelper')
 // const validator = require('validator')
 
-const getFinalPrice = function(base, discount, resellerDiscount) {
-	return base
+const calcPrice = (qty, base, discount) => {
+	return qty * (base - base * 0.01 * discount)
 }
 
 const optionsSchema = mongoose.Schema(
@@ -25,12 +24,17 @@ const basketItemSchema = mongoose.Schema(
 			type: Number,
 			required: true,
 			min: 1,
-			default: 1
+			default: 1,
+			validate: value => {
+				if (!Number.isInteger(value)) {
+					throw new Error('{VALUE} is not integer')
+				}
+			}
 		},
-		price: {
-			type: Number,
-			required: true
-		},
+		// price: {
+		// 	type: Number,
+		// 	required: true
+		// },
 		options: [optionsSchema]
 	},
 	{ _id: false }
@@ -56,8 +60,116 @@ const basketSchema = mongoose.Schema({
 })
 
 basketSchema.pre('save', async function(next) {
+	const basket = this
+	const newArray = new Map()
+	if (basket.products) {
+		basket.products.forEach(item => {
+			const propertyValue = (
+				item.product + JSON.stringify(item.options)
+			).replace('{}', '')
+
+			if (newArray.has(propertyValue) && item.quantity > 0) {
+				const existing = newArray.get(propertyValue)
+				item.quantity += existing.quantity
+
+				newArray.set(propertyValue, item)
+			} else {
+				newArray.set(propertyValue, item)
+			}
+		})
+	}
+	basket.products = Array.from(newArray.values())
 	next()
 })
+
+basketSchema.methods.addItem = async function(reqBody) {
+	// Push new item into basket
+	const basket = this
+	const product = await Product.findOne({
+		_id: reqBody.product,
+		isActive: true
+	})
+	if (!product) {
+		throw new Error('Product to add is invalid')
+	}
+	if (reqBody.quantity < product.minOrderQuantity) {
+		throw new Error('Minimum order quantity not met')
+	}
+	basket.products.push({
+		product: reqBody.product,
+		quantity: reqBody.quantity,
+		options: reqBody.options
+	})
+
+	basket.modified = new Date()
+	return basket
+}
+
+basketSchema.methods.editItem = async function(reqBody) {
+	// Push new item into basket
+	const basket = this
+	const product = await Product.findOne({
+		_id: reqBody.product,
+		isActive: true
+	})
+	if (!product) {
+		throw new Error('Product is now invalid. Removed from cart')
+	}
+	if (reqBody.quantity < product.minOrderQuantity) {
+		throw new Error('Minimum order quantity not met')
+	}
+
+	basket.products.push({
+		product: reqBody.product,
+		quantity: reqBody.quantity,
+		options: reqBody.options
+	})
+
+	basket.modified = new Date()
+	return basket
+}
+
+basketSchema.statics.getBasketDetails = async function(searchParam) {
+	const basket = await Basket.findOne(searchParam).populate([
+		{
+			path: 'products.product',
+			populate: {
+				path: 'product'
+			},
+
+			select: 'name isActive pricing images seoname -_id'
+		}
+	])
+
+	if (!basket) {
+		return null
+	}
+
+	return basket
+}
+
+basketSchema.methods.combineBasket = async function(otherBasketID) {
+	// Merge current basket items with another && delete current
+	const basket = this
+	const otherBasket = await Basket.findOne({
+		_id: otherBasketID,
+		customer: { $ne: basket.customer }
+	})
+
+	if (!otherBasket) {
+		return basket
+	}
+	if (basket.products && otherBasket.products) {
+		otherBasket.products = basket.products.concat(otherBasket.products)
+	} else if (basket.products) {
+		otherBasket.products = basket.products
+	}
+	otherBasket.modified = new Date()
+
+	await Basket.deleteOne({ _id: basket._id })
+
+	return otherBasket
+}
 
 basketSchema.statics.createNewBasket = async reqBody => {
 	const product = await Product.findOne({
@@ -71,24 +183,25 @@ basketSchema.statics.createNewBasket = async reqBody => {
 		throw new Error('Minimum order quantity not met')
 	}
 
+	const item = {
+		product: reqBody.product,
+		quantity: reqBody.quantity,
+		options: reqBody.options
+	}
+
+	// new basket
 	const basket = new Basket({
-		products: [
-			{
-				product: reqBody.product,
-				quantity: reqBody.quantity,
-				price: reqBody.quantity * product.pricing.basePrice,
-				options: reqBody.options
-			}
-		]
+		products: [item]
 	})
+
 	if (!basket) {
 		throw new Error('Error making basket')
 	}
-	await basket.save()
+
 	return basket
 }
 
-basketSchema.statics.addToBasket = async (basketID, reqBody) => {
+basketSchema.statics.findUpdateBasket = async (basketID, reqBody) => {
 	const basket = await Basket.findOne({ _id: basketID })
 	if (!basket) {
 		throw new Error('Error finding basket')
@@ -104,33 +217,14 @@ basketSchema.statics.addToBasket = async (basketID, reqBody) => {
 	if (reqBody.quantity < product.minOrderQuantity) {
 		throw new Error('Minimum order quantity not met')
 	}
+	basket.products.push({
+		product: reqBody.product,
+		quantity: reqBody.quantity,
+		options: reqBody.options
+	})
 
-	let index = 0
-	for (index in basket.products) {
-		// If product is already existing in cart, add quantity
-		if (
-			basket.products[index].product == reqBody.product &&
-			comparator.isEqual(basket.products[index].options, reqBody.options)
-		) {
-			const newQty = (basket.products[index].quantity += reqBody.quantity)
-			basket.products[index].quantity = newQty
-			basket.products[index].price = newQty * product.pricing.basePrice
-			break
-		}
-		index++
-	}
-
-	// New type of product, push to cart
-	if (index == basket.products.length) {
-		basket.products.push({
-			product: reqBody.product,
-			quantity: reqBody.quantity,
-			price: reqBody.quantity * product.pricing.basePrice,
-			options: reqBody.options
-		})
-	}
 	basket.modified = new Date()
-	await basket.save()
+
 	return basket
 }
 
