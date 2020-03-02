@@ -1,6 +1,8 @@
 const mongoose = require('mongoose')
 const getSlug = require('speakingurl')
 const Category = require('./Category')
+const Discount = require('./Discount')
+const Comment = require('./Comment')
 
 const productSchema = mongoose.Schema({
 	name: {
@@ -43,25 +45,6 @@ const productSchema = mongoose.Schema({
 		required: true,
 		min: 1
 	},
-	// pricing: {
-	// 	basePrice: {
-	// 		type: Number,
-	// 		required: true,
-	// 		min: 1
-	// 	},
-	// 	discount: {
-	// 		type: Number,
-	// 		default: 0,
-	// 		min: 0,
-	// 		max: 99
-	// 	},
-	// 	resellerDiscount: {
-	// 		type: Number,
-	// 		default: 0,
-	// 		min: 0,
-	// 		max: 99
-	// 	}
-	// },
 	sold: {
 		type: Number,
 		default: 0
@@ -123,6 +106,121 @@ productSchema.statics.addNewComment = async (productID, commentID) => {
 	}
 	product.comments = [commentID].concat(product.comments.slice(0, 10))
 	await product.save()
+	return product
+}
+
+productSchema.statics.getProductDetailsbyCategory = async category => {
+	// Get product details belonging to supplied category
+	const products = await Product.aggregate([
+		{
+			$lookup: {
+				from: Category.collection.name,
+				localField: 'category',
+				foreignField: '_id',
+				as: 'category'
+			}
+		},
+		{ $unwind: '$category' },
+		{
+			$match: {
+				isActive: true,
+				'category.name': {
+					$in: [new RegExp('^' + category + '$', 'i')]
+				}
+			}
+		},
+		{
+			$lookup: {
+				from: Discount.collection.name,
+				let: { id: '$_id' },
+				pipeline: [
+					{
+						$match: {
+							$expr: { $in: ['$$id', '$products'] },
+							start: { $lte: new Date() },
+							end: { $gte: new Date() }
+						}
+					}
+				],
+				as: 'discount'
+			}
+		},
+		{
+			$project: {
+				_id: -1,
+				seoname: 1,
+				basePrice: 1,
+				category: 1,
+				isActive: 1,
+				images: 1,
+				discount: 1
+			}
+		}
+	])
+		.sort({
+			created: -1
+		})
+		.option({ hint: { isActive: 1 } })
+
+	return products
+}
+
+productSchema.statics.getProductDetails = async productName => {
+	// Get product details of using slug
+	const product = await Product.aggregate([
+		{
+			$match: {
+				seoname: productName,
+				isActive: true
+			}
+		},
+		{
+			$lookup: {
+				from: Category.collection.name,
+				localField: 'category',
+				foreignField: '_id',
+				as: 'category'
+			}
+		},
+		{ $unwind: '$category' },
+		{
+			$lookup: {
+				from: Discount.collection.name,
+				let: { id: '$_id' },
+				pipeline: [
+					{
+						$match: {
+							$expr: { $in: ['$$id', '$products'] },
+							start: { $lte: new Date() },
+							end: { $gte: new Date() }
+						}
+					}
+				],
+				as: 'discount'
+			}
+		},
+		{
+			$lookup: {
+				from: Comment.collection.name,
+				localField: 'comments',
+				foreignField: '_id',
+				as: 'comments'
+			}
+		},
+		{
+			$project: {
+				_id: -1,
+				seoname: 1,
+				basePrice: 1,
+				category: 1,
+				isActive: 1,
+				images: 1,
+				discount: 1,
+				comments: 1
+			}
+		}
+	]).option({ hint: { seoname: 1 } })
+
 	return product
 }
 

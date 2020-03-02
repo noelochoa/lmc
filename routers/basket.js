@@ -1,4 +1,5 @@
 const express = require('express')
+const { check } = require('express-validator')
 const router = express.Router()
 
 const BasketController = require('../controllers/basket')
@@ -6,7 +7,13 @@ const guestauth = require('../middleware/guestauth')
 const storeauth = require('../middleware/storeauth')
 
 // GUEST BASKET ROUTES
-router.get('/guest/:basketID', BasketController.getGuestBasket)
+router.get(
+	'/guest/:basketID',
+	check('basketID')
+		.escape()
+		.trim(),
+	BasketController.getGuestBasket
+)
 router.get('/', guestauth, BasketController.getGuestBasket)
 router.post('/', guestauth, BasketController.addToGuestBasket)
 router.patch('/', guestauth, BasketController.patchGuestBasket)

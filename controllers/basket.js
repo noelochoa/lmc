@@ -51,17 +51,15 @@ exports.getGuestBasket = async (req, res) => {
 	try {
 		console.log(req.basket)
 		if (req.params.basketID) {
-			const basket = await Basket.getBasketDetails({
-				_id: req.params.basketID
-			})
+			const basket = await Basket.getBasketGuestDetails(
+				req.params.basketID
+			)
 			if (!basket) {
 				return res.status(404).send({ error: 'Basket not found.' })
 			}
 			return res.status(200).send({ basket })
 		} else if (req.basket) {
-			const basket = await Basket.getBasketDetails({
-				_id: req.basket._id
-			})
+			const basket = await Basket.getBasketGuestDetails(req.basket._id)
 			if (!basket) {
 				return res.status(404).send({ error: 'Basket not found.' })
 			}
@@ -77,9 +75,7 @@ exports.getBasket = async (req, res) => {
 	// Get customer basket
 	try {
 		if (req.customer) {
-			const basket = await Basket.getBasketDetails({
-				customer: req.customer._id
-			})
+			const basket = await Basket.getBasketDetails(req.customer._id)
 
 			if (basket) {
 				return res.status(200).send({ basket })
@@ -140,7 +136,6 @@ exports.addToGuestBasket = async (req, res) => {
 		if (req.basket) {
 			// If not logged in, but has supplied a basket ID
 			basket = await Basket.findUpdateBasket(req.basket._id, req.body)
-
 			await basket.save()
 			res.status(200).send({ message: 'Added item to basket' })
 		} else {
