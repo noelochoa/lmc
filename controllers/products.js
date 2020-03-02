@@ -1,5 +1,6 @@
 const Product = require('../models/Product')
 const Category = require('../models/Category')
+const Discount = require('../models/Discount')
 
 exports.getAllProducts = async (req, res) => {
 	// Dump all
@@ -48,6 +49,7 @@ exports.getActiveProducts = async (req, res) => {
 						as: 'category'
 					}
 				},
+				{ $unwind: '$category' },
 				{
 					$match: {
 						isActive: true,
@@ -56,6 +58,39 @@ exports.getActiveProducts = async (req, res) => {
 								new RegExp('^' + req.params.category + '$', 'i')
 							]
 						}
+					}
+				},
+				{
+					$lookup: {
+						from: Discount.collection.name,
+						let: { ide: '$_id', now: new Date() },
+						pipeline: [
+							{
+								$match: {
+									$expr: { $in: ['$$ide', '$products'] },
+									target: { $eq: 'all' },
+									start: { $lte: new Date() },
+									end: { $gte: new Date() }
+								}
+							}
+						],
+						as: 'discount'
+					}
+				},
+				// {
+				// 	$unwind: {
+				// 		path: '$discount',
+				// 		preserveNullAndEmptyArrays: true
+				// 	}
+				// },
+				{
+					$project: {
+						_id: -1,
+						seoname: 1,
+						basePrice: 1,
+						category: 1,
+						images: 1,
+						discount: 1
 					}
 				}
 			]).sort({

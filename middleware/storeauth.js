@@ -2,9 +2,11 @@ const jwt = require('jsonwebtoken')
 const Customer = require('../models/Customer')
 
 const storeauth = async (req, res, next) => {
-	if (req.header('Authorization') && req.header('X-CSRF-TOKEN')) {
+	if (req.header('Authorization')) {
 		const token = req.header('Authorization').replace('Bearer ', '')
 		const csrfToken = req.header('X-CSRF-TOKEN')
+			? req.header('X-CSRF-TOKEN')
+			: null
 		await jwt.verify(
 			token,
 			process.env.JWT_STORE_KEY,
@@ -18,7 +20,10 @@ const storeauth = async (req, res, next) => {
 						if (!customer) {
 							throw new Error('No entry found.')
 						}
-						if (decoded._csrf_token !== csrfToken) {
+						if (
+							req.method != 'GET' &&
+							decoded._csrf_token !== csrfToken
+						) {
 							throw new Error('Invalid CSRF token')
 						}
 						// save to req

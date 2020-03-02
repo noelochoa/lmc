@@ -38,25 +38,30 @@ const productSchema = mongoose.Schema({
 		type: String,
 		trim: true
 	},
-	pricing: {
-		basePrice: {
-			type: Number,
-			required: true,
-			min: 1
-		},
-		discount: {
-			type: Number,
-			default: 0,
-			min: 0,
-			max: 99
-		},
-		resellerDiscount: {
-			type: Number,
-			default: 0,
-			min: 0,
-			max: 99
-		}
+	basePrice: {
+		type: Number,
+		required: true,
+		min: 1
 	},
+	// pricing: {
+	// 	basePrice: {
+	// 		type: Number,
+	// 		required: true,
+	// 		min: 1
+	// 	},
+	// 	discount: {
+	// 		type: Number,
+	// 		default: 0,
+	// 		min: 0,
+	// 		max: 99
+	// 	},
+	// 	resellerDiscount: {
+	// 		type: Number,
+	// 		default: 0,
+	// 		min: 0,
+	// 		max: 99
+	// 	}
+	// },
 	sold: {
 		type: Number,
 		default: 0

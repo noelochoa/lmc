@@ -2,17 +2,19 @@ const express = require('express')
 const router = express.Router()
 
 const BasketController = require('../controllers/basket')
-const customerauth = require('../middleware/customerauth')
+const guestauth = require('../middleware/guestauth')
+const storeauth = require('../middleware/storeauth')
 
-router.get('/', customerauth, BasketController.getBasket)
-router.get('/:basketID', customerauth, BasketController.getBasket)
-router.post(
-	'/merge/:basketID',
-	customerauth,
-	BasketController.combineCustomerBasket
-)
-router.patch('/:basketID', customerauth, BasketController.patchBasket)
-router.post('/add', customerauth, BasketController.addToBasket)
-// router.post('/add/:basketID', customerauth, BasketController.addToBasket)
+// GUEST BASKET ROUTES
+router.get('/guest/:basketID', BasketController.getGuestBasket)
+router.get('/', guestauth, BasketController.getGuestBasket)
+router.post('/', guestauth, BasketController.addToGuestBasket)
+router.patch('/', guestauth, BasketController.patchGuestBasket)
+
+// LOGGED-IN CUSTOMER BASKET ROUTES
+router.get('/profile', storeauth, BasketController.getBasket)
+router.post('/profile', storeauth, BasketController.addToBasket)
+router.patch('/profile', storeauth, BasketController.patchBasket)
+router.post('/merge', storeauth, guestauth, BasketController.combineBaskets)
 
 module.exports = router

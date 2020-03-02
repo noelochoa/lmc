@@ -3,10 +3,6 @@ const Product = require('../models/Product')
 const jwt = require('jsonwebtoken')
 // const validator = require('validator')
 
-const calcPrice = (qty, base, discount) => {
-	return qty * (base - base * 0.01 * discount)
-}
-
 const optionsSchema = mongoose.Schema(
 	{
 		type: String,
@@ -83,11 +79,11 @@ basketSchema.pre('save', async function(next) {
 	next()
 })
 
-basketSchema.methods.generateAccessToken = async function() {
+basketSchema.methods.generateAccessToken = async function(csrfToken) {
 	// Generate token for accessing
 	const basket = this
 	const token = jwt.sign(
-		{ _basket_id: basket._id },
+		{ _basket_id: basket._id, _csrf_token: csrfToken },
 		process.env.JWT_STORE_KEY,
 		{
 			expiresIn: '1 week'

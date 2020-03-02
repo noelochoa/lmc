@@ -1,6 +1,7 @@
 const express = require('express')
 
 const productRouter = require('./routers/product')
+const discountRouter = require('./routers/discount')
 const basketRouter = require('./routers/basket')
 const profileRouter = require('./routers/profile')
 const userRouter = require('./routers/user')
@@ -18,6 +19,7 @@ app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 
 app.use('/products', productRouter)
+app.use('/discounts', discountRouter)
 app.use('/basket', basketRouter)
 app.use('/profile', profileRouter)
 app.use('/users', userRouter)
