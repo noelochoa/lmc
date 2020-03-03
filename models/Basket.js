@@ -141,120 +141,84 @@ basketSchema.methods.editItem = async function(reqBody) {
 	return basket
 }
 
-basketSchema.statics.getGuestBasketDetails = async basketID => {
+basketSchema.statics.getBasketDetails = async function(searchParam) {
+	// Get product details of basket
 	const basket = await Basket.aggregate([
 		{
-			$match: {
-				_id: basketID
-			}
-		},
-		{
-			$lookup: {
-				from: Product.collection.name,
-				localField: 'products',
-				foreignField: '_id',
-				as: 'products1'
-			},
-			$populate: {
-				path: 'products.product',
-				populate: {
-					path: 'category'
-				}
-			}
-		}
-	])
-
-	return basket
-}
-
-basketSchema.statics.getBasketDetails = async customerID => {
-	const basket = await Basket.aggregate([
-		{
-			$match: {
-				customer: customerID
-			}
+			$match: searchParam
 		},
 		{ $unwind: '$products' },
 		{
 			$lookup: {
 				from: Product.collection.name,
-				localField: 'products.product',
-				foreignField: '_id',
+				let: { productID: '$products.product' },
+				pipeline: [
+					{
+						$match: {
+							$expr: { $eq: ['$_id', '$$productID'] }
+						}
+					},
+					{
+						$lookup: {
+							from: Category.collection.name,
+							localField: 'category',
+							foreignField: '_id',
+							as: 'category'
+						}
+					},
+					{ $unwind: '$category' },
+					{
+						$lookup: {
+							from: Discount.collection.name,
+							let: { id: '$_id' },
+							pipeline: [
+								{
+									$match: {
+										$expr: { $in: ['$$id', '$products'] },
+										start: { $lte: new Date() },
+										end: { $gte: new Date() }
+									}
+								},
+								{
+									$project: {
+										_id: 1,
+										percent: 1,
+										target: 1
+									}
+								}
+							],
+							as: 'discount'
+						}
+					},
+					{
+						$project: {
+							_id: 1,
+							isActive: 1,
+							name: 1,
+							seoname: 1,
+							category: 1,
+							basePrice: 1,
+							images: 1,
+							discount: 1
+						}
+					}
+				],
 				as: 'products.product'
 			}
+		},
+		{
+			$group: {
+				_id: '$_id',
+				created: { $first: '$created' },
+				modified: { $first: '$modified' },
+				customer: { $first: '$customer' },
+				products: { $push: '$products' }
+			}
 		}
-		// {
-		// 	$lookup: {
-		// 		from: Category.collection.name,
-		// 		localField: 'products.product.category',
-		// 		foreignField: '_id',
-		// 		as: 'products.product.category'
-		// 	}
-		// }
-		// { $unwind: '$category' }
-		// {
-		// 	$lookup: {
-		// 		from: Discount.collection.name,
-		// 		let: { id: '$_id' },
-		// 		pipeline: [
-		// 			{
-		// 				$match: {
-		// 					$expr: { $in: ['$$id', '$products'] },
-		// 					start: { $lte: new Date() },
-		// 					end: { $gte: new Date() }
-		// 				}
-		// 			}
-		// 		],
-		// 		as: 'discount'
-		// 	}
-		// },
-
-		// {
-		// 	$project: {
-		// 		_id: -1,
-		// 		seoname: 1,
-		// 		basePrice: 1,
-		// 		category: 1,
-		// 		isActive: 1,
-		// 		discount: 1
-		// 	}
-		// }
-		// 		],
-		// 		as: 'products.product'
-		// 	}
-		// },
-		// { $unwind: '$products.product' },
-		// {
-		// 	$group: {
-		// 		_id: '$_id',
-		// 		created: { $first: '$created' },
-		// 		modified: { $first: '$modified' },
-		// 		products: { $push: '$products' },
-		// 		customer: { $first: '$customer' }
-		// 	}
-		// }
-	])
+	]).option({ hint: { 'products.product': 1 } })
 
 	return basket
 }
-
-// basketSchema.statics.getBasketDetails = async function(searchParam) {
-// 	const basket = await Basket.findOne(searchParam).populate([
-// 		{
-// 			path: 'products.product',
-// 			populate: {
-// 				path: 'category'
-// 			},
-// 			select: 'name isActive pricing images seoname category -_id'
-// 		}
-// 	])
-
-// 	if (!basket) {
-// 		return null
-// 	}
-
-// 	return basket
-// }
 
 basketSchema.methods.combineBasket = async function(otherBasketID) {
 	// Merge current basket items with another && delete current

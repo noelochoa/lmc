@@ -1,3 +1,4 @@
+const mongoose = require('mongoose')
 const crypto = require('crypto')
 const Basket = require('../models/Basket')
 const Product = require('../models/Product')
@@ -49,18 +50,22 @@ exports.combineBaskets = async (req, res) => {
 exports.getGuestBasket = async (req, res) => {
 	// Get guest basket
 	try {
-		console.log(req.basket)
 		if (req.params.basketID) {
-			const basket = await Basket.getBasketGuestDetails(
-				req.params.basketID
-			)
-			if (!basket) {
+			// getBasketDetails uses aggregate with pipeline
+			// basketID needs to be casted to mongoose ObjectID
+			const basketID = mongoose.Types.ObjectId(req.params.basketID)
+			const basket = await Basket.getBasketDetails({
+				_id: basketID
+			})
+			if (!basket || basket.length == 0) {
 				return res.status(404).send({ error: 'Basket not found.' })
 			}
 			return res.status(200).send({ basket })
 		} else if (req.basket) {
-			const basket = await Basket.getBasketGuestDetails(req.basket._id)
-			if (!basket) {
+			const basket = await Basket.getBasketDetails({
+				_id: req.basket._id
+			})
+			if (!basket || basket.length == 0) {
 				return res.status(404).send({ error: 'Basket not found.' })
 			}
 			return res.status(200).send({ basket })
@@ -75,8 +80,9 @@ exports.getBasket = async (req, res) => {
 	// Get customer basket
 	try {
 		if (req.customer) {
-			const basket = await Basket.getBasketDetails(req.customer._id)
-
+			const basket = await Basket.getBasketDetails({
+				customer: req.customer._id
+			})
 			if (basket) {
 				return res.status(200).send({ basket })
 			}
@@ -92,10 +98,6 @@ exports.addToBasket = async (req, res) => {
 	try {
 		let basket
 		if (req.customer) {
-			if (req.customer.status.isResellerApproved) {
-				req.body.isReseller = true
-			}
-
 			// If logged in, check if user has current past cart items
 			basket = await Basket.findOne({
 				customer: req.customer._id
