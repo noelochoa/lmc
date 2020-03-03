@@ -1,3 +1,4 @@
+const { validationResult } = require('express-validator')
 const User = require('../models/User')
 
 exports.getAllUsers = async (req, res) => {
@@ -32,6 +33,11 @@ exports.createNewUser = async (req, res) => {
 exports.loginUser = async (req, res) => {
 	//Login a registered user
 	try {
+		const errors = validationResult(req)
+		if (!errors.isEmpty()) {
+			return res.status(422).send({ error: 'Invalid input(s) format.' })
+		}
+
 		const { email, password } = req.body
 		const user = await User.findByCredentials(email, password)
 		if (!user) {
@@ -40,7 +46,11 @@ exports.loginUser = async (req, res) => {
 			})
 		}
 		const token = await user.generateAuthToken()
-		res.send({ user, token })
+		const cmsuser = {
+			name: user.name,
+			email: user.email
+		}
+		res.send({ cmsuser, token })
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}

@@ -52,8 +52,9 @@ const commentSchema = mongoose.Schema({
 	}
 })
 
-commentSchema.methods.flagComment = async function() {
+commentSchema.methods.flagComment = async function(bool) {
 	const comment = this
+	comment.isFlagged = bool
 	await comment.save()
 }
 

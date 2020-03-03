@@ -1,6 +1,8 @@
 const crypto = require('crypto')
 const sgmail = require('@sendgrid/mail')
 const twilio = require('twilio')
+const { validationResult } = require('express-validator')
+
 const mailhelper = require('../helpers/mailhelper')
 const smshelper = require('../helpers/smshelper')
 
@@ -23,6 +25,11 @@ exports.getAllCustomers = async (req, res) => {
 exports.createNewCustomer = async (req, res) => {
 	// Create a new Customer
 	try {
+		const errors = validationResult(req)
+		if (!errors.isEmpty()) {
+			return res.status(422).send({ error: 'Invalid input(s) format.' })
+		}
+
 		const customer = await Customer.createEntry(req.body)
 		if (customer) {
 			await customer.save()
@@ -32,7 +39,7 @@ exports.createNewCustomer = async (req, res) => {
 				.toString('hex')
 				.toUpperCase()
 
-			// update or create new token document
+			// update or create new token document for verification
 			await Token.updateOne(
 				{ customer: customer._id },
 				{
@@ -50,7 +57,7 @@ exports.createNewCustomer = async (req, res) => {
 				email: customer.email,
 				status: customer.status
 			}
-			res.status(201).send({ user, token, genToken, csrfToken })
+			res.status(201).send({ user, token, csrfToken })
 		} else {
 			res.status(400).send({ error: 'Cannot create Customer.' })
 		}

@@ -3,6 +3,8 @@ const validator = require('validator')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 
+const { check } = require('express-validator')
+
 const customerSchema = mongoose.Schema({
 	accountType: {
 		type: String,
@@ -139,6 +141,7 @@ customerSchema.statics.findByCredentials = async (email, password) => {
 			email: email,
 			'status.isActive': true
 		})
+
 		if (!customer) {
 			throw new Error('Invalid login credentials')
 		}
