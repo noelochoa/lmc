@@ -8,6 +8,7 @@ const smshelper = require('../helpers/smshelper')
 
 const Customer = require('../models/Customer')
 const Token = require('../models/Token')
+const ResetToken = require('../models/ResetToken')
 
 exports.getAllCustomers = async (req, res) => {
 	// Dump all
@@ -66,6 +67,104 @@ exports.createNewCustomer = async (req, res) => {
 	}
 }
 
+exports.sendResetToken = async (req, res) => {
+	// send password reset token
+	try {
+		const errors = validationResult(req)
+		if (!errors.isEmpty()) {
+			return res.status(422).send({ error: 'Invalid input(s) provided.' })
+		}
+		const genToken = crypto
+			.randomBytes(3)
+			.toString('hex')
+			.toUpperCase()
+		// update or create new token document
+		const result = await ResetToken.updateOne(
+			{ email: req.body.email },
+			{
+				$set: {
+					email: req.body.email,
+					token: genToken,
+					created: new Date()
+				}
+			},
+			{ upsert: true, runValidators: true }
+		)
+
+		//res.status(200).send({ token: genToken })
+
+		// Send the email (TODO IN CLIENT APP)
+		if (!result || result.n == 0) {
+			return res
+				.status(500)
+				.send({ error: 'Could not process your request.' })
+		}
+
+		sgmail.setApiKey(process.env.SENDGRID_API_KEY)
+		const resetPWMailOptions = mailhelper.createPasswordResetMail(
+			req.body.email,
+			genToken
+		)
+		await sgmail.send(resetPWMailOptions)
+		res.status(200).send({
+			message:
+				'A password reset code has been sent to your email: ' +
+				req.body.email
+		})
+	} catch (error) {
+		res.status(500).send({ error: error.message })
+	}
+}
+
+exports.verifyNewPass = async (req, res) => {
+	// verify supplied token
+	try {
+		const errors = validationResult(req)
+		if (!errors.isEmpty()) {
+			return res.status(422).send({ error: 'Invalid input(s) provided.' })
+		}
+
+		const resetToken = await ResetToken.findOne({
+			email: req.body.email,
+			token: req.body.token
+		})
+
+		// resettoken tied to email is found
+		if (resetToken) {
+			const customer = await Customer.findOne({
+				email: req.body.email,
+				'status.isActive': true
+			})
+
+			if (customer) {
+				// Reset customer password
+				customer.password = req.body.newpass
+				await customer.save()
+
+				res.status(200).send({ message: 'Password has been reset.' })
+
+				// Delete this token
+				await ResetToken.deleteOne({
+					email: req.body.email,
+					token: req.body.token
+				})
+			} else {
+				return res.status(400).send({
+					error: 'Password reset has failed.'
+				})
+			}
+		} else {
+			return res.status(400).send({
+				message:
+					'Supplied code or email is invalid. ' +
+					'Recheck input fields or try to reissue a new password reset request.'
+			})
+		}
+	} catch (error) {
+		res.status(500).send({ error: error.message })
+	}
+}
+
 exports.generateToken = async (req, res) => {
 	// send email verification token
 	try {
@@ -74,7 +173,7 @@ exports.generateToken = async (req, res) => {
 			.toString('hex')
 			.toUpperCase()
 		// update or create new token document
-		await Token.updateOne(
+		const result = await Token.updateOne(
 			{ customer: req.customer._id, verify: 'email' },
 			{
 				$set: {
@@ -86,10 +185,14 @@ exports.generateToken = async (req, res) => {
 			{ upsert: true, runValidators: true }
 		)
 
-		//res.status(200).send({ token: genToken })
+		res.status(200).send({ token: genToken })
 
 		// Send the email (TODO IN CLIENT APP)
-		/*
+		/*if (!result || result.n == 0) {
+			return res
+				.status(500)
+				.send({ error: 'Could not process your request.' })
+		}
 		sgmail.setApiKey(process.env.SENDGRID_API_KEY)
 		const verificationMailOptions = mailhelper.createVerificationMail(
 			req.customer.email,

@@ -24,6 +24,19 @@ router.post(
 router.post('/logout', storeauth, CustomersController.logoutCustomer)
 router.post('/logoutall', storeauth, CustomersController.logoutAll)
 router.patch('/', storeauth, CustomersController.patchCustomer)
+router.post(
+	'/password/reset',
+	check('email').isEmail(),
+	CustomersController.sendResetToken
+)
+
+router.patch(
+	'/password/reset',
+	check('email').isEmail(),
+	check('token').isLength(6),
+	check('newpass').isLength({ min: 6 }),
+	CustomersController.verifyNewPass
+)
 router.post('/token', storeauth, CustomersController.generateToken)
 router.post('/verify', storeauth, CustomersController.verifyToken)
 router.post('/smstoken', storeauth, CustomersController.generateSMSToken)
