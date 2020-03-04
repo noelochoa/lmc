@@ -19,7 +19,10 @@ exports.createInvalidDate = async (req, res) => {
 		const date = new InvalidDate(req.body)
 		if (date) {
 			await date.save()
-			res.status(200).send(date)
+			res.status(200).send({
+				message: 'Created new entry.',
+				date
+			})
 		} else {
 			res.status(500).send({ error: 'Cannot create Date entry.' })
 		}

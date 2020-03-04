@@ -3,11 +3,11 @@ const Discount = require('../models/Discount')
 exports.getDates = async (req, res) => {
 	// Get all discount date entries
 	try {
-		const dates = await Discount.getDiscounts()
-		if (!dates) {
+		const discounts = await Discount.getDiscounts()
+		if (!discounts) {
 			return res.status(404).send({ error: 'Date entries not found.' })
 		}
-		res.status(200).send({ dates })
+		res.status(200).send({ discounts })
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
@@ -16,10 +16,13 @@ exports.getDates = async (req, res) => {
 exports.createDiscount = async (req, res) => {
 	// Create discount date entry
 	try {
-		const date = new Discount(req.body)
-		if (date) {
-			await date.save()
-			res.status(200).send(date)
+		const discount = new Discount(req.body)
+		if (discount) {
+			await discount.save()
+			res.status(200).send({
+				message: 'Created new discount entry.',
+				discount
+			})
 		} else {
 			res.status(500).send({ error: 'Cannot create Date entry.' })
 		}
@@ -29,7 +32,7 @@ exports.createDiscount = async (req, res) => {
 }
 
 exports.patchDiscount = async (req, res) => {
-	// Edit date details
+	// Edit discount details
 	if (req.params.discountID) {
 		try {
 			const updateProps = {}
@@ -44,14 +47,14 @@ exports.patchDiscount = async (req, res) => {
 			if (!result || result.n == 0) {
 				return res
 					.status(404)
-					.send({ error: 'Error updating Date entry.' })
+					.send({ error: 'Error updating Discount entry.' })
 			}
 			res.status(200).send({ message: 'Successfully updated.' })
 		} catch (error) {
 			res.status(400).send({ error: error.message })
 		}
 	} else {
-		res.status(400).send({ error: 'Date entry ID is discount.' })
+		res.status(400).send({ error: 'Discount entry ID is missing.' })
 	}
 }
 
@@ -72,6 +75,6 @@ exports.deleteDiscount = async (req, res) => {
 			res.status(400).send({ error: error.message })
 		}
 	} else {
-		res.status(400).send({ error: 'Date entry ID is discount.' })
+		res.status(400).send({ error: 'Discount entry ID is missing.' })
 	}
 }
