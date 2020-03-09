@@ -36,7 +36,7 @@ exports.createNewCustomer = async (req, res) => {
 			await customer.save()
 
 			const genToken = crypto
-				.randomBytes(3)
+				.randomBytes(88)
 				.toString('hex')
 				.toUpperCase()
 
@@ -91,8 +91,8 @@ exports.sendResetToken = async (req, res) => {
 			{ upsert: true, runValidators: true }
 		)
 
-		//res.status(200).send({ token: genToken })
-
+		res.status(200).send({ token: genToken })
+		/*
 		// Send the email (TODO IN CLIENT APP)
 		if (!result || result.n == 0) {
 			return res
@@ -110,7 +110,7 @@ exports.sendResetToken = async (req, res) => {
 			message:
 				'A password reset code has been sent to your email: ' +
 				req.body.email
-		})
+		})*/
 	} catch (error) {
 		res.status(500).send({ error: error.message })
 	}
