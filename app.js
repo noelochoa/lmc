@@ -30,12 +30,12 @@ app.use('/invaliddates', invalidDateRouter)
 
 // Invalid Route Error Handler
 app.use(async (req, res, next) => {
-	res.status(404).send({ error: { message: 'Not Found' } })
+	res.status(404).send({ error: 'Not Found' })
 })
 
 // Internal Error Handler
 app.use(async (err, req, res, next) => {
-	res.status(500).send({ error: { message: err.message } })
+	res.status(500).send({ error: err.message })
 })
 
 app.listen(port, () => {
