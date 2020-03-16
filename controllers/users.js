@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs')
 const { validationResult } = require('express-validator')
 const User = require('../models/User')
 
@@ -64,6 +65,34 @@ exports.logoutUser = async (req, res) => {
 		})
 		await req.user.save()
 		res.send()
+	} catch (error) {
+		res.status(500).send({ error: error.message })
+	}
+}
+
+exports.changePW = async (req, res) => {
+	try {
+		const errors = validationResult(req)
+		if (!errors.isEmpty()) {
+			return res.status(422).send({ error: 'Invalid input(s) format.' })
+		}
+		const { currpw, newpw, reppw } = req.body
+		const isPasswordMatch = await bcrypt.compare(currpw, req.user.password)
+
+		if (!isPasswordMatch) {
+			return res
+				.status(400)
+				.send({ error: 'Current password does not match' })
+		}
+		if (newpw !== reppw) {
+			return res.status(400).send({
+				error: 'New and retyped passwords do not match'
+			})
+		}
+
+		req.user.password = newpw
+		await req.user.save()
+		res.status(200).send({ message: 'Password has been changed' })
 	} catch (error) {
 		res.status(500).send({ error: error.message })
 	}
