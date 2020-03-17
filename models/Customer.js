@@ -88,6 +88,14 @@ const customerSchema = mongoose.Schema({
 			default: false
 		}
 	},
+	joined: {
+		type: Date,
+		required: true,
+		default: new Date()
+	},
+	login: {
+		type: Date
+	},
 	tokens: [
 		{
 			token: {
