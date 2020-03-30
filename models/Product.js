@@ -4,6 +4,35 @@ const Category = require('./Category')
 const Discount = require('./Discount')
 const Comment = require('./Comment')
 
+const productOptionSchema = mongoose.Schema(
+	{
+		option: {
+			type: String,
+			required: true,
+			trim: true
+		},
+		price: {
+			type: Number,
+			required: true,
+			min: 0
+		}
+	},
+	{ _id: false }
+)
+
+const variantSchema = mongoose.Schema(
+	{
+		type: {
+			type: String,
+			required: true,
+			trim: true,
+			unique: true
+		},
+		option: [productOptionSchema]
+	},
+	{ _id: false }
+)
+
 const productSchema = mongoose.Schema({
 	name: {
 		type: String,
@@ -31,6 +60,11 @@ const productSchema = mongoose.Schema({
 		required: true,
 		default: true
 	},
+	isFeatured: {
+		type: Boolean,
+		required: true,
+		default: false
+	},
 	shortDesc: {
 		type: String,
 		required: true,
@@ -45,6 +79,7 @@ const productSchema = mongoose.Schema({
 		required: true,
 		min: 1
 	},
+	variants: [variantSchema],
 	sold: {
 		type: Number,
 		default: 0
@@ -153,7 +188,8 @@ productSchema.statics.getProductDetailsbyCategory = async category => {
 				category: 1,
 				isActive: 1,
 				images: 1,
-				discount: 1
+				discount: 1,
+				sold: 1
 			}
 		}
 	])
@@ -215,6 +251,7 @@ productSchema.statics.getProductDetails = async productName => {
 				category: 1,
 				isActive: 1,
 				images: 1,
+				variants: 1,
 				discount: 1,
 				comments: 1
 			}

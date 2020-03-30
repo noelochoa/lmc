@@ -1,4 +1,5 @@
 const express = require('express')
+// const compression = require("compression")
 
 const psaRouter = require('./routers/announcement')
 const productRouter = require('./routers/product')
@@ -16,6 +17,8 @@ require('./db/db')
 
 const app = express()
 
+// gzip
+// app.use(compression({ threshold: 0 }));
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 
