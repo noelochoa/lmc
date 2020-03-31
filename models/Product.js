@@ -22,13 +22,38 @@ const productOptionSchema = mongoose.Schema(
 
 const variantSchema = mongoose.Schema(
 	{
-		type: {
+		variant: {
 			type: String,
 			required: true,
 			trim: true,
 			unique: true
 		},
-		option: [productOptionSchema]
+		options: [productOptionSchema]
+	},
+	{ _id: false }
+)
+
+const detailSchema = mongoose.Schema(
+	{
+		group: {
+			type: String,
+			trim: true,
+			default: null
+		},
+		label: {
+			type: String,
+			required: true,
+			trim: true
+		},
+		value: {
+			type: String,
+			required: true,
+			trim: true
+		},
+		unit: {
+			type: String,
+			default: null
+		}
 	},
 	{ _id: false }
 )
@@ -65,20 +90,29 @@ const productSchema = mongoose.Schema({
 		required: true,
 		default: false
 	},
-	shortDesc: {
+	description: {
 		type: String,
 		required: true,
 		trim: true
 	},
-	fullDesc: {
-		type: String,
-		trim: true
-	},
+	colors: [
+		{
+			type: String,
+			trim: true,
+			validate: {
+				validator: val => {
+					return /^#([0-9A-F]{3}){1,2}$/i.test(val)
+				},
+				message: 'Invalid HEX color code'
+			}
+		}
+	],
 	basePrice: {
 		type: Number,
 		required: true,
 		min: 1
 	},
+	information: [detailSchema],
 	variants: [variantSchema],
 	sold: {
 		type: Number,
