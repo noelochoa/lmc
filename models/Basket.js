@@ -5,10 +5,24 @@ const Discount = require('../models/Discount')
 const jwt = require('jsonwebtoken')
 // const validator = require('validator')
 
-const optionsSchema = mongoose.Schema(
+const optionSchema = mongoose.Schema(
+	// {
+	// 	type: String,
+	// 	value: String
+	// },
+	// { _id: false }
 	{
-		type: String,
-		value: String
+		_option: {
+			type: mongoose.Types.ObjectId,
+			ref: 'Product.options',
+			required: true
+		},
+		_selected: {
+			type: mongoose.Types.ObjectId,
+			ref: 'Product.options.selected',
+			required: true
+		},
+		otherValue: String
 	},
 	{ _id: false }
 )
@@ -34,7 +48,17 @@ const basketItemSchema = mongoose.Schema(
 		// 	type: Number,
 		// 	required: true
 		// },
-		options: [optionsSchema]
+		options: [optionSchema],
+		references: [
+			{
+				type: String,
+				trim: true
+			}
+		],
+		memo: {
+			type: String,
+			trim: true
+		}
 	},
 	{ _id: false }
 )
@@ -62,10 +86,22 @@ basketSchema.pre('save', async function(next) {
 	const basket = this
 	const newArray = new Map()
 	if (basket.products) {
+		// Group duplicates and resolve quantity
 		basket.products.forEach(item => {
-			const propertyValue = (
-				item.product + JSON.stringify(item.options)
-			).replace('{}', '')
+			let suffix = ''
+			if (item.options && item.options.length > 0) {
+				const selectedArr = item.options.map(selected => {
+					return (
+						selected._option +
+						selected._selected +
+						(selected.otherValue ? selected.otherValue : '')
+					)
+				})
+
+				suffix = JSON.stringify(selectedArr.sort())
+			}
+			//JSON.stringify(item.options)
+			const propertyValue = (item.product + suffix).replace('{}', '')
 
 			if (newArray.has(propertyValue) && item.quantity > 0) {
 				const existing = newArray.get(propertyValue)
@@ -199,13 +235,15 @@ basketSchema.statics.getBasketDetails = async function(searchParam) {
 							category: 1,
 							basePrice: 1,
 							images: 1,
-							discount: 1
+							discount: 1,
+							options: 1
 						}
 					}
 				],
 				as: 'products.product'
 			}
 		},
+		// { $unwind: '$products.options' },
 		{
 			$group: {
 				_id: '$_id',

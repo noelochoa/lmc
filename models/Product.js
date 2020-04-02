@@ -4,35 +4,6 @@ const Category = require('./Category')
 const Discount = require('./Discount')
 const Comment = require('./Comment')
 
-const productOptionSchema = mongoose.Schema(
-	{
-		option: {
-			type: String,
-			required: true,
-			trim: true
-		},
-		price: {
-			type: Number,
-			required: true,
-			min: 0
-		}
-	},
-	{ _id: false }
-)
-
-const variantSchema = mongoose.Schema(
-	{
-		variant: {
-			type: String,
-			required: true,
-			trim: true,
-			unique: true
-		},
-		options: [productOptionSchema]
-	},
-	{ _id: false }
-)
-
 const detailSchema = mongoose.Schema(
 	{
 		group: {
@@ -113,7 +84,37 @@ const productSchema = mongoose.Schema({
 		min: 1
 	},
 	information: [detailSchema],
-	variants: [variantSchema],
+	options: [
+		{
+			attribute: {
+				type: String,
+				required: true,
+				unique: true,
+				trim: true
+			},
+			selection: [
+				{
+					value: {
+						type: String,
+						required: true,
+						unique: true,
+						trim: true
+					},
+					price: {
+						type: Number,
+						required: true,
+						default: 0
+					}
+					// add difficulty?
+				}
+			],
+			userExtendable: {
+				type: Boolean,
+				required: true,
+				default: false
+			}
+		}
+	],
 	sold: {
 		type: Number,
 		default: 0
