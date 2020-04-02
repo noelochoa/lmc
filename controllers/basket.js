@@ -83,7 +83,7 @@ exports.getBasket = async (req, res) => {
 			const basket = await Basket.getBasketDetails({
 				customer: req.customer._id
 			})
-			if (basket) {
+			if (basket && basket.length > 0) {
 				return res.status(200).send({ basket })
 			}
 		}

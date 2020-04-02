@@ -143,6 +143,31 @@ basketSchema.methods.addItem = async function(reqBody) {
 	if (reqBody.quantity < product.minOrderQuantity) {
 		throw new Error('Minimum order quantity not met')
 	}
+	if (reqBody.options && reqBody.options.length > 0) {
+		if (
+			!product.options ||
+			product.options.length < reqBody.options.length
+		) {
+			throw new Error('Product has no selectable options. ')
+		}
+
+		reqBody.options.forEach(item => {
+			const attribute = product.options.find(option => {
+				return option._id.toString() === item._option
+			})
+
+			if (!attribute) {
+				throw new Error('Supplied attribute type not configurable')
+			}
+			const selected = attribute.selection.find(value => {
+				return value._id.toString() === item._selected
+			})
+			if (!selected) {
+				throw new Error('Supplied attribute value not an option')
+			}
+		})
+	}
+
 	basket.products.push({
 		product: reqBody.product,
 		quantity: reqBody.quantity,
@@ -165,6 +190,30 @@ basketSchema.methods.editItem = async function(reqBody) {
 	}
 	if (reqBody.quantity < product.minOrderQuantity) {
 		throw new Error('Minimum order quantity not met')
+	}
+	if (reqBody.options && reqBody.options.length > 0) {
+		if (
+			!product.options ||
+			product.options.length < reqBody.options.length
+		) {
+			throw new Error('Product has no selectable options. ')
+		}
+
+		reqBody.options.forEach(item => {
+			const attribute = product.options.find(option => {
+				return option._id.toString() === item._option
+			})
+
+			if (!attribute) {
+				throw new Error('Supplied attribute type not configurable')
+			}
+			const selected = attribute.selection.find(value => {
+				return value._id.toString() === item._selected
+			})
+			if (!selected) {
+				throw new Error('Supplied attribute value not an option')
+			}
+		})
 	}
 
 	basket.products.push({
@@ -292,6 +341,30 @@ basketSchema.statics.createNewBasket = async reqBody => {
 	if (reqBody.quantity < product.minOrderQuantity) {
 		throw new Error('Minimum order quantity not met')
 	}
+	if (reqBody.options && reqBody.options.length > 0) {
+		if (
+			!product.options ||
+			product.options.length < reqBody.options.length
+		) {
+			throw new Error('Product has no selectable options. ')
+		}
+
+		reqBody.options.forEach(item => {
+			const attribute = product.options.find(option => {
+				return option._id.toString() === item._option
+			})
+
+			if (!attribute) {
+				throw new Error('Supplied attribute type not configurable')
+			}
+			const selected = attribute.selection.find(value => {
+				return value._id.toString() === item._selected
+			})
+			if (!selected) {
+				throw new Error('Supplied attribute value not an option')
+			}
+		})
+	}
 
 	const item = {
 		product: reqBody.product,
@@ -327,6 +400,31 @@ basketSchema.statics.findUpdateBasket = async (basketID, reqBody) => {
 	if (reqBody.quantity < product.minOrderQuantity) {
 		throw new Error('Minimum order quantity not met')
 	}
+	if (reqBody.options && reqBody.options.length > 0) {
+		if (
+			!product.options ||
+			product.options.length < reqBody.options.length
+		) {
+			throw new Error('Product has no selectable options. ')
+		}
+
+		reqBody.options.forEach(item => {
+			const attribute = product.options.find(option => {
+				return option._id.toString() === item._option
+			})
+
+			if (!attribute) {
+				throw new Error('Supplied attribute type not configurable')
+			}
+			const selected = attribute.selection.find(value => {
+				return value._id.toString() === item._selected
+			})
+			if (!selected) {
+				throw new Error('Supplied attribute value not an option')
+			}
+		})
+	}
+
 	basket.products.push({
 		product: reqBody.product,
 		quantity: reqBody.quantity,

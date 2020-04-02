@@ -9,6 +9,15 @@ const comparehelper = {
 
 		return true
 	},
+	isEqSorted: (a1, a2) => {
+		if (a1 && a2) {
+			a1.sort()
+			a2.sort()
+			return JSON.stringify(a1) === JSON.stringify(a2)
+		}
+
+		return false
+	},
 
 	isEqual: (a1, a2) => {
 		if (comparehelper.isEmpty(a1) && comparehelper.isEmpty(a2)) return true
@@ -17,7 +26,7 @@ const comparehelper = {
 			a1 &&
 			a2 &&
 			a1.length === a2.length &&
-			JSON.stringify(a1) === JSON.stringify(a2)
+			comparehelper.isEqSorted(a1, a2)
 		)
 	}
 }
