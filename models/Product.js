@@ -92,7 +92,7 @@ const productSchema = mongoose.Schema({
 				unique: true,
 				trim: true
 			},
-			selection: [
+			choices: [
 				{
 					value: {
 						type: String,
@@ -108,7 +108,7 @@ const productSchema = mongoose.Schema({
 					// add difficulty?
 				}
 			],
-			userExtendable: {
+			userCustomizable: {
 				type: Boolean,
 				required: true,
 				default: false

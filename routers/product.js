@@ -30,5 +30,10 @@ router.get(
 )
 router.post('/', ProductsController.createProduct)
 router.patch('/:productID', auth, ProductsController.patchProduct)
+router.patch(
+	'/options/:productID',
+	auth,
+	ProductsController.patchProductOptions
+)
 
 module.exports = router

@@ -125,3 +125,31 @@ exports.patchProduct = async (req, res) => {
 		res.status(400).send({ error: 'ProductID is invalid.' })
 	}
 }
+
+exports.patchProductOptions = async (req, res) => {
+	// Edit product options
+
+	if (req.params.productID) {
+		try {
+			// const updateProps = {}
+			// for (let op of req.body) {
+			// 	updateProps[op.property] = op.value
+			// }
+			// const result = await Product.findOneAndUpdate(
+			// 	{ _id: req.params.productID },
+			// 	{ $set: updateProps },
+			// 	{ runValidators: true }
+			// )
+			// if (!result || result.n == 0) {
+			// 	return res
+			// 		.status(404)
+			// 		.send({ error: 'Error updating product.' })
+			// }
+			res.status(200).send({ message: 'Successfully updated.' })
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(400).send({ error: 'ProductID is invalid.' })
+	}
+}
