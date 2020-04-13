@@ -131,20 +131,43 @@ exports.patchProductOptions = async (req, res) => {
 
 	if (req.params.productID) {
 		try {
-			// const updateProps = {}
-			// for (let op of req.body) {
-			// 	updateProps[op.property] = op.value
-			// }
-			// const result = await Product.findOneAndUpdate(
-			// 	{ _id: req.params.productID },
-			// 	{ $set: updateProps },
-			// 	{ runValidators: true }
-			// )
-			// if (!result || result.n == 0) {
-			// 	return res
-			// 		.status(404)
-			// 		.send({ error: 'Error updating product.' })
-			// }
+			const product = await Product.findOne({ _id: req.params.productID })
+			if (!product) {
+				return res
+					.status(404)
+					.send({ error: 'Error updating product.' })
+			}
+			const updatedOpts = []
+			for (let uOpt of req.body) {
+				// Find and update entry
+				// let found = false
+				// for (let pOpt of product.options) {
+				// 	if (pOpt._id.toString() === uOpt._id) {
+				// 		const option = {
+				// 			attribute: uOpt.attribute,
+				// 			userCustomizable: uOpt.userCustomizable,
+				// 			choices: [...pOpt.choices, ...uOpt.choices]
+				// 		}
+				// 		console.log(option.choices)
+				// 		updatedOpts.push(option)
+				// 		found = true
+				// 		break
+				// 	}
+				// }
+				// if (found) {
+				// 	continue
+				// }
+
+				// add new entry
+				updatedOpts.push({
+					// _id: uOpt._id,
+					attribute: uOpt.attribute,
+					userCustomizable: uOpt.userCustomizable,
+					choices: uOpt.choices
+				})
+			}
+			product.options = updatedOpts
+			await product.save()
 			res.status(200).send({ message: 'Successfully updated.' })
 		} catch (error) {
 			res.status(400).send({ error: error.message })

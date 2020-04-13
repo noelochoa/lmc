@@ -13,13 +13,11 @@ const optionSchema = mongoose.Schema(
 	// { _id: false }
 	{
 		_option: {
-			type: mongoose.Types.ObjectId,
-			ref: 'Product.options',
+			type: String,
 			required: true
 		},
 		_selected: {
-			type: mongoose.Types.ObjectId,
-			ref: 'Product.options.selected',
+			type: String,
 			required: true
 		},
 		otherValue: String
@@ -159,7 +157,7 @@ basketSchema.methods.addItem = async function(reqBody) {
 			if (!attribute) {
 				throw new Error('Supplied attribute type not configurable')
 			}
-			const selected = attribute.selection.find(value => {
+			const selected = attribute.choices.find(value => {
 				return value._id.toString() === item._selected
 			})
 			if (!selected) {
@@ -207,7 +205,7 @@ basketSchema.methods.editItem = async function(reqBody) {
 			if (!attribute) {
 				throw new Error('Supplied attribute type not configurable')
 			}
-			const selected = attribute.selection.find(value => {
+			const selected = attribute.choices.find(value => {
 				return value._id.toString() === item._selected
 			})
 			if (!selected) {
@@ -348,7 +346,6 @@ basketSchema.statics.createNewBasket = async reqBody => {
 		) {
 			throw new Error('Product has no selectable options. ')
 		}
-
 		reqBody.options.forEach(item => {
 			const attribute = product.options.find(option => {
 				return option._id.toString() === item._option
@@ -357,7 +354,7 @@ basketSchema.statics.createNewBasket = async reqBody => {
 			if (!attribute) {
 				throw new Error('Supplied attribute type not configurable')
 			}
-			const selected = attribute.selection.find(value => {
+			const selected = attribute.choices.find(value => {
 				return value._id.toString() === item._selected
 			})
 			if (!selected) {
@@ -416,7 +413,7 @@ basketSchema.statics.findUpdateBasket = async (basketID, reqBody) => {
 			if (!attribute) {
 				throw new Error('Supplied attribute type not configurable')
 			}
-			const selected = attribute.selection.find(value => {
+			const selected = attribute.choices.find(value => {
 				return value._id.toString() === item._selected
 			})
 			if (!selected) {

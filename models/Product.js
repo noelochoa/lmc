@@ -4,31 +4,6 @@ const Category = require('./Category')
 const Discount = require('./Discount')
 const Comment = require('./Comment')
 
-const detailSchema = mongoose.Schema(
-	{
-		group: {
-			type: String,
-			trim: true,
-			default: null
-		},
-		label: {
-			type: String,
-			required: true,
-			trim: true
-		},
-		value: {
-			type: String,
-			required: true,
-			trim: true
-		},
-		unit: {
-			type: String,
-			default: null
-		}
-	},
-	{ _id: false }
-)
-
 const productSchema = mongoose.Schema({
 	name: {
 		type: String,
@@ -83,27 +58,39 @@ const productSchema = mongoose.Schema({
 		required: true,
 		min: 1
 	},
-	information: [detailSchema],
+	details: [{}],
 	options: [
 		{
+			_id: {
+				type: String,
+				trim: true
+			},
 			attribute: {
 				type: String,
 				required: true,
-				unique: true,
-				trim: true
+				trim: true,
+				unique: true
 			},
 			choices: [
 				{
+					_id: {
+						type: String,
+						trim: true
+					},
 					value: {
 						type: String,
 						required: true,
-						unique: true,
 						trim: true
 					},
 					price: {
 						type: Number,
 						required: true,
 						default: 0
+					},
+					available: {
+						type: Boolean,
+						required: true,
+						default: true
 					}
 					// add difficulty?
 				}
@@ -155,6 +142,27 @@ productSchema.pre('save', async function(next) {
 	const product = this
 	if (product.isModified('name')) {
 		product.seoname = getSlug(product.name)
+	}
+
+	if (product.isModified('options')) {
+		for (let opt of product.options) {
+			let hasOther = false
+
+			opt._id = opt.attribute // set ID as Attribute
+			opt.choices = opt.choices.map(choice => {
+				if (choice.value == 'Other') {
+					hasOther = true
+				}
+				choice._id = opt._id + '.' + choice.value // set ID as Attribute.Value
+				return choice
+			})
+
+			if (opt.userCustomizable && !hasOther) {
+				throw new Error(
+					"Invalid Options. 'Other' is required if option is customizable."
+				)
+			}
+		}
 	}
 	next()
 })

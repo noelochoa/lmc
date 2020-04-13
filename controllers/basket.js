@@ -178,7 +178,10 @@ exports.patchGuestBasket = async (req, res) => {
 					// if found
 					if (
 						basket.products[i].product == product &&
-						comparator.isEqual(basket.products[i].options, options)
+						comparator.isEqualOptions(
+							basket.products[i].options,
+							options
+						)
 					) {
 						// Remove this element
 						if (quantity == 0) {
@@ -237,7 +240,10 @@ exports.patchBasket = async (req, res) => {
 					// if found
 					if (
 						basket.products[i].product == product &&
-						comparator.isEqual(basket.products[i].options, options)
+						comparator.isEqualOptions(
+							basket.products[i].options,
+							options
+						)
 					) {
 						// Remove this element
 						if (quantity == 0) {
