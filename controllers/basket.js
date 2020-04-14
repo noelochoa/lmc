@@ -178,16 +178,11 @@ exports.patchGuestBasket = async (req, res) => {
 					// if found
 					if (
 						basket.products[i].product == product &&
-						comparator.isEqualOptions(
-							basket.products[i].options,
-							options
-						)
+						comparator.isEqArr(basket.products[i].options, options)
 					) {
 						// Remove this element
 						if (quantity == 0) {
-							basket.products = basket.products.filter(item => {
-								return item != basket.products[i]
-							})
+							basket.products.pull(basket.products[i])
 						} else {
 							// Update quantity
 							if (quantity < productObj.minOrderQuantity) {
@@ -240,16 +235,11 @@ exports.patchBasket = async (req, res) => {
 					// if found
 					if (
 						basket.products[i].product == product &&
-						comparator.isEqualOptions(
-							basket.products[i].options,
-							options
-						)
+						comparator.isEqArr(basket.products[i].options, options)
 					) {
 						// Remove this element
 						if (quantity == 0) {
-							basket.products = basket.products.filter(item => {
-								return item != basket.products[i]
-							})
+							basket.products.pull(basket.products[i])
 						} else {
 							// Update quantity
 							if (quantity < productObj.minOrderQuantity) {
