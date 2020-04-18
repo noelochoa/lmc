@@ -176,3 +176,42 @@ exports.patchProductOptions = async (req, res) => {
 		res.status(400).send({ error: 'ProductID is invalid.' })
 	}
 }
+
+exports.patchProductImages = async (req, res) => {
+	// Edit product images
+	if (!req.files.length || req.files.length < 1) {
+		return res
+			.status(400)
+			.send({
+				error:
+					'File upload failed. Limit the files to 4MB and ensure that the images are of JPG/PNG type.'
+			})
+	}
+
+	if (req.params.productID) {
+		try {
+			const product = await Product.findOne({ _id: req.params.productID })
+			if (!product) {
+				return res
+					.status(404)
+					.send({ error: 'Error updating product.' })
+			}
+			const updatedImgs = []
+			// console.log(req.body)
+			for (let uImg of req.files) {
+				// add new entry
+				updatedImgs.push({
+					image: uImg.path,
+					imageType: req.body.imageType || 'gallery'
+				})
+			}
+			product.images = updatedImgs
+			await product.save()
+			res.status(200).send({ message: 'Successfully updated.' })
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(400).send({ error: 'ProductID is invalid.' })
+	}
+}

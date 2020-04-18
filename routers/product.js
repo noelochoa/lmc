@@ -1,6 +1,14 @@
 const express = require('express')
 const { check } = require('express-validator')
+const multer = require('multer')
 const router = express.Router()
+
+const { fileFilter, imageStorage, imageLimits } = require('../helpers/settings')
+const upload = multer({
+	storage: multer.diskStorage(imageStorage),
+	limits: imageLimits,
+	fileFilter: fileFilter
+})
 
 const ProductsController = require('../controllers/products')
 const auth = require('../middleware/auth')
@@ -34,6 +42,12 @@ router.patch(
 	'/options/:productID',
 	auth,
 	ProductsController.patchProductOptions
+)
+router.patch(
+	'/images/:productID',
+	auth,
+	upload.array('image'),
+	ProductsController.patchProductImages
 )
 
 module.exports = router

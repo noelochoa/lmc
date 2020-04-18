@@ -19,6 +19,7 @@ const app = express()
 
 // gzip
 // app.use(compression({ threshold: 0 }));
+app.use('/images', express.static('images'))
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 

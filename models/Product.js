@@ -119,13 +119,13 @@ const productSchema = mongoose.Schema({
 	images: [
 		{
 			image: {
-				type: String
+				type: String,
+				required: true
 			},
 			imageType: {
 				type: String,
-				required: () => {
-					return this.images.image != null
-				}
+				required: true,
+				enum: ['gallery', 'thumbnail', 'banner']
 			}
 		}
 	],
