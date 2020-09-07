@@ -91,8 +91,8 @@ exports.sendResetToken = async (req, res) => {
 			{ upsert: true, runValidators: true }
 		)
 
-		res.status(200).send({ token: genToken })
-		/*
+		//res.status(200).send({ token: genToken })
+
 		// Send the email (TODO IN CLIENT APP)
 		if (!result || result.n == 0) {
 			return res
@@ -110,7 +110,7 @@ exports.sendResetToken = async (req, res) => {
 			message:
 				'A password reset code has been sent to your email: ' +
 				req.body.email
-		})*/
+		})
 	} catch (error) {
 		res.status(500).send({ error: error.message })
 	}
@@ -185,10 +185,10 @@ exports.generateToken = async (req, res) => {
 			{ upsert: true, runValidators: true }
 		)
 
-		res.status(200).send({ token: genToken })
+		//res.status(200).send({ token: genToken })
 
 		// Send the email (TODO IN CLIENT APP)
-		/*if (!result || result.n == 0) {
+		if (!result || result.n == 0) {
 			return res
 				.status(500)
 				.send({ error: 'Could not process your request.' })
@@ -204,7 +204,7 @@ exports.generateToken = async (req, res) => {
 			message:
 				'A verification code has been sent to your email: ' +
 				req.customer.email
-		})*/
+		})
 	} catch (error) {
 		res.status(500).send({ error: error.message })
 	}
