@@ -43,13 +43,13 @@ exports.loginUser = async (req, res) => {
 		const user = await User.findByCredentials(email, password)
 		if (!user) {
 			return res.status(401).send({
-				error: 'Login failed! Check authentication credentials'
+				error: 'Login failed! Check authentication credentials',
 			})
 		}
 		const token = await user.generateAuthToken()
 		const cmsuser = {
 			name: user.name,
-			email: user.email
+			email: user.email,
 		}
 		res.send({ cmsuser, token })
 	} catch (error) {
@@ -60,7 +60,7 @@ exports.loginUser = async (req, res) => {
 exports.logoutUser = async (req, res) => {
 	// Log user out of the application
 	try {
-		req.user.tokens = req.user.tokens.filter(token => {
+		req.user.tokens = req.user.tokens.filter((token) => {
 			return token.token != req.token
 		})
 		await req.user.save()
@@ -86,7 +86,7 @@ exports.changePW = async (req, res) => {
 		}
 		if (newpw !== reppw) {
 			return res.status(400).send({
-				error: 'New and retyped passwords do not match'
+				error: 'New and retyped passwords do not match',
 			})
 		}
 

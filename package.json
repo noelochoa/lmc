@@ -15,11 +15,7 @@
 		"express": "^4.17.1",
 		"express-validator": "^6.6.1",
 		"jsonwebtoken": "^8.5.1",
-<<<<<<< HEAD
 		"lodash": "^4.17.20",
-=======
-		"lodash": "^4.17.19",
->>>>>>> d7dbe2625543bb777f29592c5ebd59ae8df1320c
 		"mkdirp": "^1.0.4",
 		"moment": "^2.27.0",
 		"mongodb": "^3.6.1",
