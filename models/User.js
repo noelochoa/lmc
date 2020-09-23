@@ -7,40 +7,40 @@ const userSchema = mongoose.Schema({
 	name: {
 		type: String,
 		required: true,
-		trim: true
+		trim: true,
 	},
 	email: {
 		type: String,
 		required: true,
 		unique: true,
 		lowercase: true,
-		validate: value => {
+		validate: (value) => {
 			if (!validator.isEmail(value)) {
 				throw new Error('Invalid email address')
 			}
-		}
+		},
 	},
 	password: {
 		type: String,
 		required: true,
-		minLength: 6
+		minLength: 6,
 	},
 	isActive: {
 		type: Boolean,
 		required: true,
-		default: true
+		default: true,
 	},
 	tokens: [
 		{
 			token: {
 				type: String,
-				required: true
-			}
-		}
-	]
+				required: true,
+			},
+		},
+	],
 })
 
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
 	// Hash the password before saving the user model
 	const user = this
 	if (user.isModified('password')) {
@@ -49,7 +49,7 @@ userSchema.pre('save', async function(next) {
 	next()
 })
 
-userSchema.pre('updateOne', async function(next) {
+userSchema.pre('updateOne', async function (next) {
 	// Hash the password before saving the user model
 	const updateData = this.getUpdate().$set
 	if (updateData.password) {
@@ -61,10 +61,12 @@ userSchema.pre('updateOne', async function(next) {
 	next()
 })
 
-userSchema.methods.generateAuthToken = async function() {
+userSchema.methods.generateAuthToken = async function () {
 	// Generate an auth token for the user
 	const user = this
-	const token = jwt.sign({ _id: user._id }, process.env.JWT_KEY)
+	const token = jwt.sign({ _id: user._id }, process.env.JWT_KEY, {
+		expiresIn: '1m',
+	})
 	user.tokens = user.tokens.concat({ token })
 	await user.save()
 	return token
@@ -86,7 +88,7 @@ userSchema.statics.findByCredentials = async (email, password) => {
 	throw new Error('Missing login credentials')
 }
 
-userSchema.statics.getUsers = async function() {
+userSchema.statics.getUsers = async function () {
 	const users = await User.find()
 	if (!users) {
 		throw new Error('Nothing found')
