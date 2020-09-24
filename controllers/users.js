@@ -1,6 +1,8 @@
 const bcrypt = require('bcryptjs')
+const crypto = require('crypto')
 const { validationResult } = require('express-validator')
 const User = require('../models/User')
+const RefreshToken = require('../models/RefreshTokens')
 
 exports.getAllUsers = async (req, res) => {
 	// Dump all
@@ -43,15 +45,22 @@ exports.loginUser = async (req, res) => {
 		const user = await User.findByCredentials(email, password)
 		if (!user) {
 			return res.status(401).send({
-				error: 'Login failed! Check authentication credentials',
+				error: 'Login failed! Check authentication credentials'
 			})
 		}
+		const reftoken = new RefreshToken({
+			token: crypto.randomBytes(48).toString('hex'),
+			user: user._id,
+			expiresAt: new Date(Date.now() + 3600 * 1000 * 24) // 1day
+		})
+
+		await reftoken.save()
 		const token = await user.generateAuthToken()
 		const cmsuser = {
 			name: user.name,
-			email: user.email,
+			email: user.email
 		}
-		res.send({ cmsuser, token })
+		res.send({ cmsuser, token, refresh_token: reftoken.token })
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
@@ -86,7 +95,7 @@ exports.changePW = async (req, res) => {
 		}
 		if (newpw !== reppw) {
 			return res.status(400).send({
-				error: 'New and retyped passwords do not match',
+				error: 'New and retyped passwords do not match'
 			})
 		}
 
@@ -104,6 +113,35 @@ exports.logoutAll = async (req, res) => {
 		req.user.tokens.splice(0, req.user.tokens.length)
 		await req.user.save()
 		res.send()
+	} catch (error) {
+		res.status(500).send({ error: error.message })
+	}
+}
+
+exports.refresh = async (req, res) => {
+	// Get new JWT for valid refresh token
+	try {
+		if (req.header('X-REF-TOKEN')) {
+			const reftoken = await RefreshToken.findOne({
+				token: req.header('X-REF-TOKEN')
+			})
+			if (reftoken && !reftoken.isActive) {
+				const user = await User.findOne({
+					_id: reftoken.user
+				})
+				if (user) {
+					const token = await user.generateAuthToken()
+					const cmsuser = {
+						name: user.name,
+						email: user.email
+					}
+					res.send({ cmsuser, token })
+				}
+			}
+		}
+		res.status(401).send({
+			error: 'Not authorized to access this resource'
+		})
 	} catch (error) {
 		res.status(500).send({ error: error.message })
 	}
