@@ -21,7 +21,7 @@ const announcementSchema = mongoose.Schema({
 	start: {
 		type: Date,
 		required: true,
-		default: new Date()
+		default: Date.now
 	},
 	end: {
 		type: Date,
@@ -37,20 +37,20 @@ const announcementSchema = mongoose.Schema({
 	}
 })
 
-announcementSchema.pre('save', async function(next) {
+announcementSchema.pre('save', async function (next) {
 	// Run validator manually on save
 	checkStartEndDate(this.start, this.end)
 	next()
 })
 
-announcementSchema.pre('updateOne', async function(next) {
+announcementSchema.pre('updateOne', async function (next) {
 	// Run validator manually on updateOne
 	const updateData = this.getUpdate().$set
 	checkStartEndDate(updateData.start, updateData.end)
 	next()
 })
 
-announcementSchema.statics.getAnnouncement = async function() {
+announcementSchema.statics.getAnnouncement = async function () {
 	const now = moment()
 	const announcement = await Announcement.findOne({
 		start: { $lte: now.toDate() },

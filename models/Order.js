@@ -24,7 +24,7 @@ const orderItemSchema = mongoose.Schema(
 			required: true,
 			min: 1,
 			default: 1,
-			validate: value => {
+			validate: (value) => {
 				if (!Number.isInteger(value)) {
 					throw new Error('{VALUE} is not integer')
 				}
@@ -64,22 +64,22 @@ const orderSchema = mongoose.Schema({
 	created: {
 		type: Date,
 		required: true,
-		default: new Date()
+		default: Date.now
 	},
 	modified: {
 		type: Date,
 		required: true,
-		default: new Date()
+		default: Date.now
 	},
 	products: [orderItemSchema]
 })
 
-orderSchema.pre('save', async function(next) {
+orderSchema.pre('save', async function (next) {
 	const order = this
 	next()
 })
 
-orderSchema.statics.getOrderDetails = async function(searchParam) {
+orderSchema.statics.getOrderDetails = async function (searchParam) {
 	// Get product details of order
 	const order = await Order.aggregate([
 		{
@@ -158,7 +158,7 @@ orderSchema.statics.getOrderDetails = async function(searchParam) {
 	return order
 }
 
-orderSchema.statics.placeOrder = async reqBody => {
+orderSchema.statics.placeOrder = async (reqBody) => {
 	const order = this
 	order.status = null /* should be PLACED */
 

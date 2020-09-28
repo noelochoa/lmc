@@ -10,7 +10,7 @@ const resetTokenSchema = mongoose.Schema({
 		unique: true,
 		lowercase: true,
 		validate: {
-			validator: val => {
+			validator: (val) => {
 				return Customer.exists({ email: val, 'status.isActive': true })
 			},
 			message: '{VALUE} is invalid or does not exist'
@@ -23,7 +23,7 @@ const resetTokenSchema = mongoose.Schema({
 	created: {
 		type: Date,
 		expires: '30m',
-		default: new Date()
+		default: Date.now
 	}
 })
 

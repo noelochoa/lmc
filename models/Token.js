@@ -20,7 +20,7 @@ const tokenSchema = mongoose.Schema({
 	created: {
 		type: Date,
 		expires: '30m',
-		default: new Date()
+		default: Date.now
 	}
 })
 

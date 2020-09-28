@@ -20,7 +20,7 @@ const productSchema = mongoose.Schema({
 		ref: 'Category',
 		required: true,
 		validate: {
-			validator: val => {
+			validator: (val) => {
 				return Category.exists({ _id: val })
 			},
 			message: 'Category is invalid'
@@ -46,7 +46,7 @@ const productSchema = mongoose.Schema({
 			type: String,
 			trim: true,
 			validate: {
-				validator: val => {
+				validator: (val) => {
 					return /^#([0-9A-F]{3}){1,2}$/i.test(val)
 				},
 				message: 'Invalid HEX color code'
@@ -114,7 +114,7 @@ const productSchema = mongoose.Schema({
 	created: {
 		type: Date,
 		required: true,
-		default: new Date()
+		default: Date.now
 	},
 	images: [
 		{
@@ -137,7 +137,7 @@ const productSchema = mongoose.Schema({
 	]
 })
 
-productSchema.pre('save', async function(next) {
+productSchema.pre('save', async function (next) {
 	// Create slug for name on save
 	const product = this
 	if (product.isModified('name')) {
@@ -149,7 +149,7 @@ productSchema.pre('save', async function(next) {
 			let hasOther = false
 
 			opt._id = opt.attribute // set ID as Attribute
-			opt.choices = opt.choices.map(choice => {
+			opt.choices = opt.choices.map((choice) => {
 				if (choice.value == 'Other') {
 					hasOther = true
 				}
@@ -167,7 +167,7 @@ productSchema.pre('save', async function(next) {
 	next()
 })
 
-productSchema.pre('updateOne', async function(next) {
+productSchema.pre('updateOne', async function (next) {
 	// Recreate slug for name on updateOne
 	const updateData = this.getUpdate().$set
 	if (updateData.name) {
@@ -187,7 +187,7 @@ productSchema.statics.addNewComment = async (productID, commentID) => {
 	return product
 }
 
-productSchema.statics.getProductDetailsbyCategory = async category => {
+productSchema.statics.getProductDetailsbyCategory = async (category) => {
 	// Get product details belonging to supplied category
 	const products = await Product.aggregate([
 		{
@@ -244,7 +244,7 @@ productSchema.statics.getProductDetailsbyCategory = async category => {
 	return products
 }
 
-productSchema.statics.getProductDetails = async productName => {
+productSchema.statics.getProductDetails = async (productName) => {
 	// Get product details of using slug
 	const product = await Product.aggregate([
 		{

@@ -33,7 +33,7 @@ const customerSchema = mongoose.Schema({
 		required: true,
 		unique: true,
 		lowercase: true,
-		validate: value => {
+		validate: (value) => {
 			if (!validator.isEmail(value)) {
 				throw new Error('Invalid email address')
 			}
@@ -43,7 +43,7 @@ const customerSchema = mongoose.Schema({
 		type: String,
 		unique: true,
 		sparse: true,
-		validate: value => {
+		validate: (value) => {
 			if (!validator.isMobilePhone(value)) {
 				throw new Error('Invalid phone number')
 			}
@@ -91,7 +91,7 @@ const customerSchema = mongoose.Schema({
 	joined: {
 		type: Date,
 		required: true,
-		default: new Date()
+		default: Date.now
 	},
 	login: {
 		type: Date
@@ -106,7 +106,7 @@ const customerSchema = mongoose.Schema({
 	]
 })
 
-customerSchema.pre('save', async function(next) {
+customerSchema.pre('save', async function (next) {
 	// Hash the password before saving the Customer model
 	const customer = this
 	if (customer.isModified('password')) {
@@ -115,7 +115,7 @@ customerSchema.pre('save', async function(next) {
 	next()
 })
 
-customerSchema.pre('updateOne', async function(next) {
+customerSchema.pre('updateOne', async function (next) {
 	// Hash the password before saving the Customer model
 	const updateData = this.getUpdate().$set
 	if (updateData.password) {
@@ -127,7 +127,7 @@ customerSchema.pre('updateOne', async function(next) {
 	next()
 })
 
-customerSchema.methods.generateAuthToken = async function(csrfToken) {
+customerSchema.methods.generateAuthToken = async function (csrfToken) {
 	// Generate an auth token for the Customer
 	const customer = this
 	const token = jwt.sign(
@@ -165,11 +165,11 @@ customerSchema.statics.findByCredentials = async (email, password) => {
 	throw new Error('Missing expected params')
 }
 
-customerSchema.statics.removeToken = async token => {
+customerSchema.statics.removeToken = async (token) => {
 	// Remove token from list
 	const customer = await Customer.findOne({ 'tokens.token': token })
 	if (customer) {
-		customer.tokens = customer.tokens.filter(item => {
+		customer.tokens = customer.tokens.filter((item) => {
 			return item.token != token
 		})
 		await customer.save()
@@ -178,7 +178,7 @@ customerSchema.statics.removeToken = async token => {
 	return false
 }
 
-customerSchema.statics.getCustomers = async function() {
+customerSchema.statics.getCustomers = async function () {
 	// Get all customers
 	const Customers = await Customer.find()
 	if (!Customers) {
@@ -187,7 +187,7 @@ customerSchema.statics.getCustomers = async function() {
 	return Customers
 }
 
-customerSchema.statics.createEntry = async reqBody => {
+customerSchema.statics.createEntry = async (reqBody) => {
 	// check and create Customer entry
 	let customer = await Customer.findOne({ email: reqBody.email })
 	if (customer) {

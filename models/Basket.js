@@ -36,7 +36,7 @@ const basketItemSchema = mongoose.Schema(
 			required: true,
 			min: 1,
 			default: 1,
-			validate: value => {
+			validate: (value) => {
 				if (!Number.isInteger(value)) {
 					throw new Error('{VALUE} is not integer')
 				}
@@ -70,25 +70,25 @@ const basketSchema = mongoose.Schema({
 	created: {
 		type: Date,
 		required: true,
-		default: new Date()
+		default: Date.now
 	},
 	modified: {
 		type: Date,
 		required: true,
-		default: new Date()
+		default: Date.now
 	},
 	products: [basketItemSchema]
 })
 
-basketSchema.pre('save', async function(next) {
+basketSchema.pre('save', async function (next) {
 	const basket = this
 	const newArray = new Map()
 	if (basket.products) {
 		// Group duplicates and resolve quantity
-		basket.products.forEach(item => {
+		basket.products.forEach((item) => {
 			let suffix = ''
 			if (item.options && item.options.length > 0) {
-				const selectedArr = item.options.map(selected => {
+				const selectedArr = item.options.map((selected) => {
 					return (
 						selected._option +
 						selected._selected +
@@ -115,7 +115,7 @@ basketSchema.pre('save', async function(next) {
 	next()
 })
 
-basketSchema.methods.generateAccessToken = async function(csrfToken) {
+basketSchema.methods.generateAccessToken = async function (csrfToken) {
 	// Generate token for accessing
 	const basket = this
 	const token = jwt.sign(
@@ -128,7 +128,7 @@ basketSchema.methods.generateAccessToken = async function(csrfToken) {
 	return token
 }
 
-basketSchema.methods.addItem = async function(reqBody) {
+basketSchema.methods.addItem = async function (reqBody) {
 	// Push new item into basket
 	const basket = this
 	const product = await Product.findOne({
@@ -149,15 +149,15 @@ basketSchema.methods.addItem = async function(reqBody) {
 			throw new Error('Product has no selectable options. ')
 		}
 
-		reqBody.options.forEach(item => {
-			const attribute = product.options.find(option => {
+		reqBody.options.forEach((item) => {
+			const attribute = product.options.find((option) => {
 				return option._id.toString() === item._option
 			})
 
 			if (!attribute) {
 				throw new Error('Supplied attribute type not configurable')
 			}
-			const selected = attribute.choices.find(value => {
+			const selected = attribute.choices.find((value) => {
 				return value._id.toString() === item._selected
 			})
 			if (!selected) {
@@ -176,7 +176,7 @@ basketSchema.methods.addItem = async function(reqBody) {
 	return basket
 }
 
-basketSchema.methods.editItem = async function(reqBody) {
+basketSchema.methods.editItem = async function (reqBody) {
 	// Push new item into basket
 	const basket = this
 	const product = await Product.findOne({
@@ -197,15 +197,15 @@ basketSchema.methods.editItem = async function(reqBody) {
 			throw new Error('Product has no selectable options. ')
 		}
 
-		reqBody.options.forEach(item => {
-			const attribute = product.options.find(option => {
+		reqBody.options.forEach((item) => {
+			const attribute = product.options.find((option) => {
 				return option._id.toString() === item._option
 			})
 
 			if (!attribute) {
 				throw new Error('Supplied attribute type not configurable')
 			}
-			const selected = attribute.choices.find(value => {
+			const selected = attribute.choices.find((value) => {
 				return value._id.toString() === item._selected
 			})
 			if (!selected) {
@@ -224,7 +224,7 @@ basketSchema.methods.editItem = async function(reqBody) {
 	return basket
 }
 
-basketSchema.statics.getBasketDetails = async function(searchParam) {
+basketSchema.statics.getBasketDetails = async function (searchParam) {
 	// Get product details of basket
 	const basket = await Basket.aggregate([
 		{
@@ -305,7 +305,7 @@ basketSchema.statics.getBasketDetails = async function(searchParam) {
 	return basket
 }
 
-basketSchema.methods.combineBasket = async function(otherBasketID) {
+basketSchema.methods.combineBasket = async function (otherBasketID) {
 	// Merge current basket items with another && delete current
 	const basket = this
 	const otherBasket = await Basket.findOne({
@@ -328,7 +328,7 @@ basketSchema.methods.combineBasket = async function(otherBasketID) {
 	return otherBasket
 }
 
-basketSchema.statics.createNewBasket = async reqBody => {
+basketSchema.statics.createNewBasket = async (reqBody) => {
 	const product = await Product.findOne({
 		_id: reqBody.product,
 		isActive: true
@@ -346,15 +346,15 @@ basketSchema.statics.createNewBasket = async reqBody => {
 		) {
 			throw new Error('Product has no selectable options. ')
 		}
-		reqBody.options.forEach(item => {
-			const attribute = product.options.find(option => {
+		reqBody.options.forEach((item) => {
+			const attribute = product.options.find((option) => {
 				return option._id.toString() === item._option
 			})
 
 			if (!attribute) {
 				throw new Error('Supplied attribute type not configurable')
 			}
-			const selected = attribute.choices.find(value => {
+			const selected = attribute.choices.find((value) => {
 				return value._id.toString() === item._selected
 			})
 			if (!selected) {
@@ -405,15 +405,15 @@ basketSchema.statics.findUpdateBasket = async (basketID, reqBody) => {
 			throw new Error('Product has no selectable options. ')
 		}
 
-		reqBody.options.forEach(item => {
-			const attribute = product.options.find(option => {
+		reqBody.options.forEach((item) => {
+			const attribute = product.options.find((option) => {
 				return option._id.toString() === item._option
 			})
 
 			if (!attribute) {
 				throw new Error('Supplied attribute type not configurable')
 			}
-			const selected = attribute.choices.find(value => {
+			const selected = attribute.choices.find((value) => {
 				return value._id.toString() === item._selected
 			})
 			if (!selected) {

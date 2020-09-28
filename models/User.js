@@ -7,7 +7,7 @@ const userSchema = mongoose.Schema({
 	name: {
 		type: String,
 		required: true,
-		trim: true,
+		trim: true
 	},
 	email: {
 		type: String,
@@ -18,26 +18,26 @@ const userSchema = mongoose.Schema({
 			if (!validator.isEmail(value)) {
 				throw new Error('Invalid email address')
 			}
-		},
+		}
 	},
 	password: {
 		type: String,
 		required: true,
-		minLength: 6,
+		minLength: 6
 	},
 	isActive: {
 		type: Boolean,
 		required: true,
-		default: true,
-	},
-	tokens: [
-		{
-			token: {
-				type: String,
-				required: true,
-			},
-		},
-	],
+		default: true
+	}
+	// tokens: [
+	// 	{
+	// 		token: {
+	// 			type: String,
+	// 			required: true,
+	// 		},
+	// 	},
+	// ],
 })
 
 userSchema.pre('save', async function (next) {
@@ -61,14 +61,14 @@ userSchema.pre('updateOne', async function (next) {
 	next()
 })
 
-userSchema.methods.generateAuthToken = async function () {
+userSchema.methods.generateAuthToken = function () {
 	// Generate an auth token for the user
 	const user = this
 	const token = jwt.sign({ _id: user._id }, process.env.JWT_KEY, {
-		expiresIn: '1 days',
+		expiresIn: '1 days'
 	})
-	user.tokens = user.tokens.concat({ token })
-	await user.save()
+	//user.tokens = user.tokens.concat({ token })
+	//await user.save()
 	return token
 }
 

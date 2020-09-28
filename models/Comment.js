@@ -8,7 +8,7 @@ const commentSchema = mongoose.Schema({
 		ref: 'Customer',
 		required: true,
 		validate: {
-			validator: val => {
+			validator: (val) => {
 				return Customer.exists({ _id: val, 'status.isVerified': true })
 			},
 			message: 'Customer id is invalid'
@@ -19,7 +19,7 @@ const commentSchema = mongoose.Schema({
 		ref: 'Product',
 		required: true,
 		validate: {
-			validator: val => {
+			validator: (val) => {
 				return Product.exists({ _id: val })
 			},
 			message: 'Product id is invalid'
@@ -29,7 +29,7 @@ const commentSchema = mongoose.Schema({
 		type: mongoose.Types.ObjectId,
 		ref: 'Comment',
 		validate: {
-			validator: val => {
+			validator: (val) => {
 				return Comment.exists({ _id: val })
 			},
 			message: 'Parent comment is invalid'
@@ -48,17 +48,17 @@ const commentSchema = mongoose.Schema({
 	created: {
 		type: Date,
 		required: true,
-		default: new Date()
+		default: Date.now
 	}
 })
 
-commentSchema.methods.flagComment = async function(bool) {
+commentSchema.methods.flagComment = async function (bool) {
 	const comment = this
 	comment.isFlagged = bool
 	await comment.save()
 }
 
-commentSchema.methods.postComment = async function() {
+commentSchema.methods.postComment = async function () {
 	const comment = this
 	await comment.save()
 	result = await Product.addNewComment(comment.product, comment._id)
@@ -68,7 +68,7 @@ commentSchema.methods.postComment = async function() {
 	return comment
 }
 
-commentSchema.statics.getComments = async function() {
+commentSchema.statics.getComments = async function () {
 	const comments = await Comment.find().sort({ created: -1 })
 	if (!comments) {
 		throw new Error('Nothing found')
@@ -76,7 +76,7 @@ commentSchema.statics.getComments = async function() {
 	return comments
 }
 
-commentSchema.statics.toHumanReadableDate = timestamp => {
+commentSchema.statics.toHumanReadableDate = (timestamp) => {
 	if (timestamp) {
 		return new Date(timestamp).toUTCString()
 	}

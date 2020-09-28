@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
 const { validationResult } = require('express-validator')
 const User = require('../models/User')
-const RefreshToken = require('../models/RefreshTokens')
+const AccessToken = require('../models/AccessToken')
 
 exports.getAllUsers = async (req, res) => {
 	// Dump all
@@ -23,7 +23,12 @@ exports.createNewUser = async (req, res) => {
 		const user = new User(req.body)
 		if (user) {
 			await user.save()
-			const token = await user.generateAuthToken()
+			const token = user.generateAuthToken()
+			const accToken = new AccessToken({
+				user: user._id,
+				token: token
+			})
+			await accToken.save()
 			res.status(201).send({ user, token })
 		} else {
 			res.status(400).send({ error: 'Cannot create user.' })
@@ -48,19 +53,17 @@ exports.loginUser = async (req, res) => {
 				error: 'Login failed! Check authentication credentials'
 			})
 		}
-		const reftoken = new RefreshToken({
-			token: crypto.randomBytes(48).toString('hex'),
+		const token = user.generateAuthToken()
+		const accToken = new AccessToken({
 			user: user._id,
-			expiresAt: new Date(Date.now() + 3600 * 1000 * 24) // 1day
+			token: token
 		})
-
-		await reftoken.save()
-		const token = await user.generateAuthToken()
+		await accToken.save()
 		const cmsuser = {
 			name: user.name,
 			email: user.email
 		}
-		res.send({ cmsuser, token, refresh_token: reftoken.token })
+		res.send({ cmsuser, token })
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
@@ -69,10 +72,8 @@ exports.loginUser = async (req, res) => {
 exports.logoutUser = async (req, res) => {
 	// Log user out of the application
 	try {
-		req.user.tokens = req.user.tokens.filter((token) => {
-			return token.token != req.token
-		})
-		await req.user.save()
+		req.token.revoked = true
+		await req.token.save()
 		res.send()
 	} catch (error) {
 		res.status(500).send({ error: error.message })
@@ -110,8 +111,13 @@ exports.changePW = async (req, res) => {
 exports.logoutAll = async (req, res) => {
 	// Log user out of all devices
 	try {
-		req.user.tokens.splice(0, req.user.tokens.length)
-		await req.user.save()
+		//req.user.tokens.splice(0, req.user.tokens.length)
+		//await req.token.save()
+		const result = await AccessToken.updateMany(
+			{ user: req.user._id },
+			{ $set: { revoked: true } },
+			{ runValidators: true }
+		)
 		res.send()
 	} catch (error) {
 		res.status(500).send({ error: error.message })
@@ -122,7 +128,7 @@ exports.refresh = async (req, res) => {
 	// Get new JWT for valid refresh token
 	try {
 		if (req.header('X-REF-TOKEN')) {
-			const reftoken = await RefreshToken.findOne({
+			const reftoken = await CMSysJWT.findOne({
 				token: req.header('X-REF-TOKEN')
 			})
 			if (reftoken && !reftoken.isActive) {
@@ -130,7 +136,7 @@ exports.refresh = async (req, res) => {
 					_id: reftoken.user
 				})
 				if (user) {
-					const token = await user.generateAuthToken()
+					const token = user.generateAuthToken()
 					const cmsuser = {
 						name: user.name,
 						email: user.email
