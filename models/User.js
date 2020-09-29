@@ -61,12 +61,16 @@ userSchema.pre('updateOne', async function (next) {
 	next()
 })
 
-userSchema.methods.generateAuthToken = function () {
+userSchema.methods.generateAuthToken = function (xrefToken) {
 	// Generate an auth token for the user
 	const user = this
-	const token = jwt.sign({ _id: user._id }, process.env.JWT_KEY, {
-		expiresIn: '1 days'
-	})
+	const token = jwt.sign(
+		{ _id: user._id, _xref: xrefToken },
+		process.env.JWT_KEY,
+		{
+			expiresIn: '1 days'
+		}
+	)
 	//user.tokens = user.tokens.concat({ token })
 	//await user.save()
 	return token

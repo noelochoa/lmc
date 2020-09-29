@@ -53,7 +53,9 @@ exports.loginUser = async (req, res) => {
 				error: 'Login failed! Check authentication credentials'
 			})
 		}
-		const token = user.generateAuthToken()
+		const xsrf = crypto.randomBytes(48).toString('hex')
+		const xsrfHash = await bcrypt.hash(xsrf, 10)
+		const token = user.generateAuthToken(xsrfHash)
 		const accToken = new AccessToken({
 			user: user._id,
 			token: token
@@ -63,7 +65,7 @@ exports.loginUser = async (req, res) => {
 			name: user.name,
 			email: user.email
 		}
-		res.send({ cmsuser, token })
+		res.send({ cmsuser, token, xsrf })
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
