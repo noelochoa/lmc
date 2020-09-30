@@ -67,6 +67,7 @@ exports.logoutUser = async (req, res) => {
 	try {
 		req.token.revoked = true
 		await req.token.save()
+		res.set('x-access-token', '')
 		res.send()
 	} catch (error) {
 		res.status(500).send({ error: error.message })

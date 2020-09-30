@@ -19,8 +19,8 @@ const auth = async (req, res, next) => {
 				user: data._id,
 				token: token
 			}).populate('user')
-			if (!accToken || !accToken.isActive || !accToken.user.isActive) {
-				throw new Error('Invalid Token or Unauthorized account used.')
+			if (!accToken || !accToken.isActive) {
+				throw new Error()
 			}
 			// save to req
 			req.user = accToken.user
@@ -28,7 +28,8 @@ const auth = async (req, res, next) => {
 			next()
 		} catch (error) {
 			res.status(401).send({
-				error: error.message
+				error:
+					'Not authorized to access this resource. ' + error.message
 			})
 		}
 	} else {

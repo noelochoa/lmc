@@ -13,6 +13,7 @@ router.post(
 	check('password').isLength({ min: 6 }),
 	UsersController.loginUser
 )
+router.post('/refresh', UsersController.loginUser)
 router.post(
 	'/changepw',
 	check('currpw').isLength({ min: 6 }),
