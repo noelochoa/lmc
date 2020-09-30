@@ -27,18 +27,23 @@ const accessTokenSchema = mongoose.Schema({
 	revoked: {
 		type: Boolean,
 		default: false
+	},
+	refreshed: {
+		type: Boolean,
+		default: false
 	}
 })
 
-accessTokenSchema.virtual('isUserInactive', {
-	ref: 'User',
-	localField: 'user',
-	foreignField: '_id',
-	justOne: true
+accessTokenSchema.virtual('isExpired').get(function () {
+	return this.expiresAt <= Date.now()
 })
 
 accessTokenSchema.virtual('isActive').get(function () {
-	return !this.revoked && !this.isUserInactive
+	return !this.revoked && !this.isExpired
+})
+
+accessTokenSchema.virtual('isRefreshable').get(function () {
+	return !this.refreshed && !this.isExpired
 })
 
 const AccessToken = mongoose.model(

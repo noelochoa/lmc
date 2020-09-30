@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const validator = require('validator')
 const bcrypt = require('bcryptjs')
+const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 
 const userSchema = mongoose.Schema({
@@ -61,11 +62,14 @@ userSchema.pre('updateOne', async function (next) {
 	next()
 })
 
-userSchema.methods.generateAuthToken = function (xrefToken) {
+userSchema.methods.generateAuthToken = async function () {
 	// Generate an auth token for the user
 	const user = this
+	const xsrf = crypto.randomBytes(48).toString('base64')
+	const xsrfHash = await bcrypt.hash(xsrf, 10)
+
 	const token = jwt.sign(
-		{ _id: user._id, _xref: xrefToken },
+		{ _id: user._id, _xref: xsrfHash },
 		process.env.JWT_KEY,
 		{
 			expiresIn: '1 days'
@@ -73,7 +77,7 @@ userSchema.methods.generateAuthToken = function (xrefToken) {
 	)
 	//user.tokens = user.tokens.concat({ token })
 	//await user.save()
-	return token
+	return { token, xsrf }
 }
 
 userSchema.statics.findByCredentials = async (email, password) => {

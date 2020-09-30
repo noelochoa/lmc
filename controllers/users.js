@@ -1,5 +1,4 @@
 const bcrypt = require('bcryptjs')
-const crypto = require('crypto')
 const { validationResult } = require('express-validator')
 const User = require('../models/User')
 const AccessToken = require('../models/AccessToken')
@@ -23,13 +22,7 @@ exports.createNewUser = async (req, res) => {
 		const user = new User(req.body)
 		if (user) {
 			await user.save()
-			const token = user.generateAuthToken()
-			const accToken = new AccessToken({
-				user: user._id,
-				token: token
-			})
-			await accToken.save()
-			res.status(201).send({ user, token })
+			res.status(201).send({ user })
 		} else {
 			res.status(400).send({ error: 'Cannot create user.' })
 		}
@@ -53,9 +46,7 @@ exports.loginUser = async (req, res) => {
 				error: 'Login failed! Check authentication credentials'
 			})
 		}
-		const xsrf = crypto.randomBytes(48).toString('hex')
-		const xsrfHash = await bcrypt.hash(xsrf, 10)
-		const token = user.generateAuthToken(xsrfHash)
+		const { token, xsrf } = await user.generateAuthToken()
 		const accToken = new AccessToken({
 			user: user._id,
 			token: token
@@ -76,6 +67,22 @@ exports.logoutUser = async (req, res) => {
 	try {
 		req.token.revoked = true
 		await req.token.save()
+		res.send()
+	} catch (error) {
+		res.status(500).send({ error: error.message })
+	}
+}
+
+exports.logoutAll = async (req, res) => {
+	// Log user out of all devices
+	try {
+		//req.user.tokens.splice(0, req.user.tokens.length)
+		//await req.token.save()
+		await AccessToken.updateMany(
+			{ user: req.user._id },
+			{ $set: { revoked: true } },
+			{ runValidators: true }
+		)
 		res.send()
 	} catch (error) {
 		res.status(500).send({ error: error.message })
@@ -110,45 +117,45 @@ exports.changePW = async (req, res) => {
 	}
 }
 
-exports.logoutAll = async (req, res) => {
-	// Log user out of all devices
-	try {
-		//req.user.tokens.splice(0, req.user.tokens.length)
-		//await req.token.save()
-		const result = await AccessToken.updateMany(
-			{ user: req.user._id },
-			{ $set: { revoked: true } },
-			{ runValidators: true }
-		)
-		res.send()
-	} catch (error) {
-		res.status(500).send({ error: error.message })
-	}
-}
-
 exports.refresh = async (req, res) => {
 	// Get new JWT for valid refresh token
 	try {
-		if (req.header('X-REF-TOKEN')) {
-			const reftoken = await CMSysJWT.findOne({
-				token: req.header('X-REF-TOKEN')
-			})
-			if (reftoken && !reftoken.isActive) {
-				const user = await User.findOne({
-					_id: reftoken.user
+		if (req.user && req.token) {
+			if (!req.token.isRefreshable) {
+				// Valid but has expired, reissue tokens
+				const { token, xsrf } = await req.user.generateAuthToken()
+				const accToken = new AccessToken({
+					user: req.user._id,
+					token: token
 				})
-				if (user) {
-					const token = user.generateAuthToken()
-					const cmsuser = {
-						name: user.name,
-						email: user.email
-					}
-					res.send({ cmsuser, token })
-				}
+				await accToken.save()
+				res.send({ token, xsrf })
+
+				// Mark previous token as unusable
+				req.token.revoked = true
+				req.token.refreshed = true
+				req.token.save()
+				return
+			} else if (req.token.isExpired) {
+				// Refresh window expired. Needs reauthentication
+				return res.status(401).send({
+					error: 'Relogin needed due to long inactivity.'
+				})
+			} else {
+				// ALERT: Potentially stolen
+				// Revoke all of users tokens for safety
+				await AccessToken.updateMany(
+					{ user: req.user._id },
+					{ $set: { revoked: true } },
+					{ runValidators: true }
+				)
+				return res.status(401).send({
+					error: 'Anomaly detected. Reauthentication is needed.'
+				})
 			}
 		}
 		res.status(401).send({
-			error: 'Not authorized to access this resource'
+			error: 'Unable to recreate token.'
 		})
 	} catch (error) {
 		res.status(500).send({ error: error.message })
