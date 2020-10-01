@@ -67,7 +67,7 @@ exports.logoutUser = async (req, res) => {
 	try {
 		req.token.revoked = true
 		await req.token.save()
-		res.set('x-access-token', '')
+		// res.set('x-access-token', '')
 		res.send()
 	} catch (error) {
 		res.status(500).send({ error: error.message })
@@ -122,7 +122,7 @@ exports.refresh = async (req, res) => {
 	// Get new JWT for valid refresh token
 	try {
 		if (req.user && req.token) {
-			if (!req.token.isRefreshable) {
+			if (req.token.isRefreshable) {
 				// Valid but has expired, reissue tokens
 				const { token, xsrf } = await req.user.generateAuthToken()
 				const accToken = new AccessToken({

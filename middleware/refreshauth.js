@@ -2,14 +2,16 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const AccessToken = require('../models/AccessToken')
 
-const auth = async (req, res, next) => {
+const refreshauth = async (req, res, next) => {
 	if (req.header('Authorization')) {
 		const token = req.header('Authorization').replace('Bearer ', '')
 		const csrfToken = req.header('X-CSRF-TOKEN')
 			? req.header('X-CSRF-TOKEN')
 			: null
 		try {
-			const data = jwt.verify(token, process.env.JWT_KEY)
+			const data = jwt.verify(token, process.env.JWT_KEY, {
+				ignoreExpiration: true
+			})
 			if (req.method != 'GET') {
 				if (!csrfToken) {
 					return res.status(400).send({
@@ -24,7 +26,7 @@ const auth = async (req, res, next) => {
 				token: token
 			}).populate('user')
 			if (!accToken || !accToken.isActive) {
-				throw new Error('Invalid Access Token.')
+				throw new Error('Inactive Access Token.')
 			}
 			if (!accToken.user.isActive) {
 				throw new Error('Unauthorized account.')
@@ -45,4 +47,4 @@ const auth = async (req, res, next) => {
 	}
 }
 
-module.exports = auth
+module.exports = refreshauth

@@ -72,7 +72,7 @@ userSchema.methods.generateAuthToken = async function () {
 		{ _id: user._id, _xref: xsrfHash },
 		process.env.JWT_KEY,
 		{
-			expiresIn: '1 days'
+			expiresIn: '15m'
 		}
 	)
 	//user.tokens = user.tokens.concat({ token })
@@ -85,21 +85,21 @@ userSchema.statics.findByCredentials = async (email, password) => {
 	if (password && email) {
 		const user = await User.findOne({ email: email, isActive: true })
 		if (!user) {
-			throw new Error('Invalid or unknown email')
+			throw new Error('Invalid or unknown email.')
 		}
 		const isPasswordMatch = await bcrypt.compare(password, user.password)
 		if (!isPasswordMatch) {
-			throw new Error('Invalid password')
+			throw new Error('Invalid password.')
 		}
 		return user
 	}
-	throw new Error('Missing login credentials')
+	throw new Error('Missing login credentials.')
 }
 
 userSchema.statics.getUsers = async function () {
 	const users = await User.find()
 	if (!users) {
-		throw new Error('Nothing found')
+		throw new Error('Nothing found.')
 	}
 	return users
 }

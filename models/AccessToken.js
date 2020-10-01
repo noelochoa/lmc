@@ -21,8 +21,8 @@ const accessTokenSchema = mongoose.Schema({
 	expiresAt: {
 		type: Date,
 		required: true,
-		default: () => Date.now() + 300 * 1000,
-		expires: '15m'
+		default: () => Date.now() + 3600 * 24 * 7 * 1000,
+		expires: '1w'
 	},
 	revoked: {
 		type: Boolean,
@@ -35,7 +35,7 @@ const accessTokenSchema = mongoose.Schema({
 })
 
 accessTokenSchema.virtual('isExpired').get(function () {
-	return this.expiresAt <= Date.now()
+	return this.expiresAt < Date.now()
 })
 
 accessTokenSchema.virtual('isActive').get(function () {

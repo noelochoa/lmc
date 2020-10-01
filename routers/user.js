@@ -4,6 +4,7 @@ const router = express.Router()
 
 const UsersController = require('../controllers/users')
 const auth = require('../middleware/auth')
+const refreshauth = require('../middleware/refreshauth')
 
 router.get('/', auth, UsersController.getAllUsers)
 router.post('/', auth, UsersController.createNewUser)
@@ -13,7 +14,7 @@ router.post(
 	check('password').isLength({ min: 6 }),
 	UsersController.loginUser
 )
-router.post('/refresh', UsersController.loginUser)
+router.post('/refresh', refreshauth, UsersController.refresh)
 router.post(
 	'/changepw',
 	check('currpw').isLength({ min: 6 }),
