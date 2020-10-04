@@ -139,7 +139,7 @@ exports.refresh = async (req, res) => {
 				return
 			} else if (req.token.isExpired) {
 				// Refresh window expired. Needs reauthentication
-				return res.status(401).send({
+				return res.status(403).send({
 					error: 'Relogin needed due to long inactivity.'
 				})
 			} else {
@@ -150,12 +150,12 @@ exports.refresh = async (req, res) => {
 					{ $set: { revoked: true } },
 					{ runValidators: true }
 				)
-				return res.status(401).send({
+				return res.status(403).send({
 					error: 'Anomaly detected. Reauthentication is needed.'
 				})
 			}
 		}
-		res.status(401).send({
+		res.status(403).send({
 			error: 'Unable to recreate token.'
 		})
 	} catch (error) {

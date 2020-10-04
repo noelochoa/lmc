@@ -176,6 +176,39 @@ productSchema.pre('updateOne', async function (next) {
 	next()
 })
 
+productSchema.statics.getProductStats = async function () {
+	// Get product stats (Active, Featured, Total)
+	const stats = await Product.aggregate([
+		{
+			$facet: {
+				Active: [{ $match: { isActive: true } }, { $count: 'Active' }],
+				Featured: [
+					{ $match: { isFeatured: true } },
+					{ $count: 'Featured' }
+				],
+				Total: [{ $count: 'Total' }]
+			}
+		},
+		{
+			$project: {
+				active: {
+					$ifNull: [{ $arrayElemAt: ['$Active.Active', 0] }, 0]
+				},
+				featured: {
+					$ifNull: [{ $arrayElemAt: ['$Featured.Featured', 0] }, 0]
+				},
+				total: {
+					$ifNull: [{ $arrayElemAt: ['$Total.Total', 0] }, 0]
+				}
+			}
+		}
+	])
+	if (!stats || !stats[0]) {
+		throw new Error('Error querying product stats.')
+	}
+	return stats[0]
+}
+
 productSchema.statics.addNewComment = async (productID, commentID) => {
 	// Push commentID to current list (limit to 10)
 	const product = await Product.findOne({ _id: productID })

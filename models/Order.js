@@ -3,6 +3,7 @@ const OrderStatus = require('../models/OrderStatus')
 const Product = require('../models/Product')
 const Category = require('../models/Category')
 const Discount = require('../models/Discount')
+const TrustedComms = require('twilio/lib/rest/preview/TrustedComms')
 // const validator = require('validator')
 
 const optionsSchema = mongoose.Schema(
@@ -42,8 +43,8 @@ const orderItemSchema = mongoose.Schema(
 const orderSchema = mongoose.Schema({
 	customer: {
 		type: mongoose.Types.ObjectId,
-		unique: true,
-		sparse: true
+		ref: 'Customer',
+		required: true
 	},
 	status: {
 		type: mongoose.Types.ObjectId,
@@ -66,6 +67,10 @@ const orderSchema = mongoose.Schema({
 		required: true,
 		default: Date.now
 	},
+	target: {
+		type: Date,
+		required: true
+	},
 	modified: {
 		type: Date,
 		required: true,
@@ -78,6 +83,71 @@ orderSchema.pre('save', async function (next) {
 	const order = this
 	next()
 })
+
+orderSchema.statics.getOrderStats = async function () {
+	const today = new Date()
+	const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+	const lastDayOfMonth = new Date(
+		today.getFullYear(),
+		today.getMonth() + 1,
+		0
+	)
+	const stats = await Order.aggregate([
+		{
+			$match: { target: { $gte: firstDayOfMonth, $lte: lastDayOfMonth } }
+		},
+		{
+			$lookup: {
+				from: OrderStatus.collection.name,
+				localField: 'status',
+				foreignField: '_id',
+				as: 'status'
+			}
+		},
+		{ $unwind: '$status' },
+		// { $group: { _id: '$status.status', count: { $sum: 1 } } },
+		{
+			$facet: {
+				Placed: [
+					{ $match: { 'status.status': 'Placed' } },
+					{ $count: 'Placed' }
+				],
+				Accepted: [
+					{ $match: { 'status.status': 'Accepted' } },
+					{ $count: 'Accepted' }
+				],
+				Processed: [
+					{ $match: { 'status.status': 'Processed' } },
+					{ $count: 'Processed' }
+				],
+				Fulfilled: [
+					{ $match: { 'status.status': 'Fulfilled' } },
+					{ $count: 'Fulfilled' }
+				]
+			}
+		},
+		{
+			$project: {
+				placed: {
+					$ifNull: [{ $arrayElemAt: ['$Placed.Placed', 0] }, 0]
+				},
+				accepted: {
+					$ifNull: [{ $arrayElemAt: ['$Accepted.Accepted', 0] }, 0]
+				},
+				processed: {
+					$ifNull: [{ $arrayElemAt: ['$Processed.Processed', 0] }, 0]
+				},
+				fulfilled: {
+					$ifNull: [{ $arrayElemAt: ['$Fulfilled.Fulfilled', 0] }, 0]
+				}
+			}
+		}
+	])
+	if (!stats || !stats[0]) {
+		throw new Error('Error querying order stats.')
+	}
+	return stats[0]
+}
 
 orderSchema.statics.getOrderDetails = async function (searchParam) {
 	// Get product details of order

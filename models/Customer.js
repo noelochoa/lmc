@@ -187,6 +187,48 @@ customerSchema.statics.getCustomers = async function () {
 	return Customers
 }
 
+customerSchema.statics.getCustomerStats = async function () {
+	// Get customers stats
+	// const stats = await Customer.aggregate([
+	// 	{ $group: { _id: '$accountType', count: { $sum: 1 } } }
+	// ])
+	const stats = await Customer.aggregate([
+		{
+			$facet: {
+				Regular: [
+					{ $match: { accountType: 'regular' } },
+					{ $count: 'Regular' }
+				],
+				Reseller: [
+					{ $match: { accountType: 'reseller' } },
+					{ $count: 'Reseller' }
+				],
+				Partner: [
+					{ $match: { accountType: 'partner' } },
+					{ $count: 'Partner' }
+				]
+			}
+		},
+		{
+			$project: {
+				regular: {
+					$ifNull: [{ $arrayElemAt: ['$Regular.Regular', 0] }, 0]
+				},
+				reseller: {
+					$ifNull: [{ $arrayElemAt: ['$Reseller.Reseller', 0] }, 0]
+				},
+				partner: {
+					$ifNull: [{ $arrayElemAt: ['$Partner.Partner', 0] }, 0]
+				}
+			}
+		}
+	])
+	if (!stats || !stats[0]) {
+		throw new Error('Error querying customer stats.')
+	}
+	return stats[0]
+}
+
 customerSchema.statics.createEntry = async (reqBody) => {
 	// check and create Customer entry
 	let customer = await Customer.findOne({ email: reqBody.email })

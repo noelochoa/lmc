@@ -36,6 +36,7 @@ const refreshauth = async (req, res, next) => {
 			req.token = accToken
 			next()
 		} catch (error) {
+			console.log('REF', error)
 			return res.status(401).send({
 				error: error.message
 			})

@@ -18,6 +18,15 @@ exports.getAllProducts = async (req, res) => {
 	}
 }
 
+exports.getProductStats = async (req, res) => {
+	try {
+		const stats = await Product.getProductStats()
+		res.status(200).send(stats)
+	} catch (error) {
+		res.status(400).send({ error: error.message })
+	}
+}
+
 exports.getActiveProducts = async (req, res) => {
 	// Get active products by category
 	try {
@@ -180,12 +189,10 @@ exports.patchProductOptions = async (req, res) => {
 exports.patchProductImages = async (req, res) => {
 	// Edit product images
 	if (!req.files.length || req.files.length < 1) {
-		return res
-			.status(400)
-			.send({
-				error:
-					'File upload failed. Limit the files to 4MB and ensure that the images are of JPG/PNG type.'
-			})
+		return res.status(400).send({
+			error:
+				'File upload failed. Limit the files to 4MB and ensure that the images are of JPG/PNG type.'
+		})
 	}
 
 	if (req.params.productID) {

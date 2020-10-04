@@ -11,6 +11,7 @@ const customerRouter = require('./routers/customer')
 const commentRouter = require('./routers/comment')
 const categoryRouter = require('./routers/category')
 const invalidDateRouter = require('./routers/invaliddate')
+const ordersRouter = require('./routers/orders')
 
 const port = process.env.PORT
 require('./db/db')
@@ -53,6 +54,7 @@ app.use('/customers', customerRouter)
 app.use('/comments', commentRouter)
 app.use('/categories', categoryRouter)
 app.use('/invaliddates', invalidDateRouter)
+app.use('/orders', ordersRouter)
 
 // Invalid Route Error Handler
 app.use(async (req, res, next) => {

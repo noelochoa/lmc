@@ -5,6 +5,7 @@ const CustomersController = require('../controllers/customers')
 const auth = require('../middleware/auth')
 
 router.get('/', auth, CustomersController.getAllCustomers)
+router.get('/stats', auth, CustomersController.getCustomerStats)
 router.patch('/', auth, CustomersController.patchCustomer)
 router.post('/', auth, CustomersController.createNewCustomer)
 

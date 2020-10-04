@@ -23,6 +23,15 @@ exports.getAllCustomers = async (req, res) => {
 	}
 }
 
+exports.getCustomerStats = async (req, res) => {
+	try {
+		const stats = await Customer.getCustomerStats()
+		res.status(200).send(stats)
+	} catch (error) {
+		res.status(400).send({ error: error.message })
+	}
+}
+
 exports.createNewCustomer = async (req, res) => {
 	// Create a new Customer
 	try {
@@ -74,10 +83,7 @@ exports.sendResetToken = async (req, res) => {
 		if (!errors.isEmpty()) {
 			return res.status(422).send({ error: 'Invalid input(s) provided.' })
 		}
-		const genToken = crypto
-			.randomBytes(3)
-			.toString('hex')
-			.toUpperCase()
+		const genToken = crypto.randomBytes(3).toString('hex').toUpperCase()
 		// update or create new token document
 		const result = await ResetToken.updateOne(
 			{ email: req.body.email },
@@ -168,10 +174,7 @@ exports.verifyNewPass = async (req, res) => {
 exports.generateToken = async (req, res) => {
 	// send email verification token
 	try {
-		const genToken = crypto
-			.randomBytes(3)
-			.toString('hex')
-			.toUpperCase()
+		const genToken = crypto.randomBytes(3).toString('hex').toUpperCase()
 		// update or create new token document
 		const result = await Token.updateOne(
 			{ customer: req.customer._id, verify: 'email' },
@@ -253,10 +256,7 @@ exports.verifyToken = async (req, res) => {
 exports.generateSMSToken = async (req, res) => {
 	// send SMS verification code to phone number
 	try {
-		const genToken = crypto
-			.randomBytes(3)
-			.toString('hex')
-			.toUpperCase()
+		const genToken = crypto.randomBytes(3).toString('hex').toUpperCase()
 		// update or create new token document
 		await Token.updateOne(
 			{ customer: req.customer._id, verify: 'sms' },
@@ -369,7 +369,7 @@ exports.loginCustomer = async (req, res) => {
 exports.logoutCustomer = async (req, res) => {
 	// Log Customer out of the application
 	try {
-		req.customer.tokens = req.customer.tokens.filter(token => {
+		req.customer.tokens = req.customer.tokens.filter((token) => {
 			return token.token != req.token
 		})
 		await req.customer.save()
