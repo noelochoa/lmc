@@ -32,6 +32,15 @@ exports.getCustomerStats = async (req, res) => {
 	}
 }
 
+exports.getPendingResellers = async (req, res) => {
+	try {
+		const stats = await Customer.getPendingResellers()
+		res.status(200).send(stats)
+	} catch (error) {
+		res.status(400).send({ error: error.message })
+	}
+}
+
 exports.createNewCustomer = async (req, res) => {
 	// Create a new Customer
 	try {

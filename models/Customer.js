@@ -5,105 +5,116 @@ const jwt = require('jsonwebtoken')
 
 const { check } = require('express-validator')
 
-const customerSchema = mongoose.Schema({
-	accountType: {
-		type: String,
-		enum: ['regular', 'reseller', 'partner'],
-		default: 'regular'
-	},
-	lastname: {
-		type: String,
-		required: true,
-		trim: true,
-		max: 256
-	},
-	firstname: {
-		type: String,
-		required: true,
-		trim: true,
-		max: 256
-	},
-	address: {
-		type: String,
-		trim: true,
-		max: 512
-	},
-	email: {
-		type: String,
-		required: true,
-		unique: true,
-		lowercase: true,
-		validate: (value) => {
-			if (!validator.isEmail(value)) {
-				throw new Error('Invalid email address')
+const customerSchema = mongoose.Schema(
+	{
+		accountType: {
+			type: String,
+			enum: ['regular', 'reseller', 'partner'],
+			default: 'regular'
+		},
+		lastname: {
+			type: String,
+			required: true,
+			trim: true,
+			max: 256
+		},
+		firstname: {
+			type: String,
+			required: true,
+			trim: true,
+			max: 256
+		},
+		address: {
+			type: String,
+			trim: true,
+			max: 512
+		},
+		email: {
+			type: String,
+			required: true,
+			unique: true,
+			lowercase: true,
+			validate: (value) => {
+				if (!validator.isEmail(value)) {
+					throw new Error('Invalid email address')
+				}
 			}
-		}
-	},
-	phonenumber: {
-		type: String,
-		unique: true,
-		sparse: true,
-		validate: (value) => {
-			if (!validator.isMobilePhone(value)) {
-				throw new Error('Invalid phone number')
+		},
+		phonenumber: {
+			type: String,
+			unique: true,
+			sparse: true,
+			validate: (value) => {
+				if (!validator.isMobilePhone(value)) {
+					throw new Error('Invalid phone number')
+				}
 			}
-		}
-	},
-	password: {
-		type: String,
-		required: true,
-		minLength: 6
-	},
-	status: {
-		isActive: {
-			type: Boolean,
-			required: true,
-			default: true
 		},
-		isVerified: {
-			type: Boolean,
+		password: {
+			type: String,
 			required: true,
-			default: false
+			minLength: 6
 		},
-		isSMSVerified: {
-			type: Boolean,
-			required: true,
-			default: false
-		},
-		isResellerApproved: {
-			type: Boolean,
-			required: true,
-			default: false
-		}
-	},
-	notification: {
-		isEmailAllowed: {
-			type: Boolean,
-			required: true,
-			default: true
-		},
-		isSMSAllowed: {
-			type: Boolean,
-			required: true,
-			default: false
-		}
-	},
-	joined: {
-		type: Date,
-		required: true,
-		default: Date.now
-	},
-	login: {
-		type: Date
-	},
-	tokens: [
-		{
-			token: {
-				type: String,
-				required: true
+		status: {
+			isActive: {
+				type: Boolean,
+				required: true,
+				default: true
+			},
+			isVerified: {
+				type: Boolean,
+				required: true,
+				default: false
+			},
+			isSMSVerified: {
+				type: Boolean,
+				required: true,
+				default: false
+			},
+			isResellerApproved: {
+				type: Boolean,
+				required: true,
+				default: false
 			}
+		},
+		notification: {
+			isEmailAllowed: {
+				type: Boolean,
+				required: true,
+				default: true
+			},
+			isSMSAllowed: {
+				type: Boolean,
+				required: true,
+				default: false
+			}
+		},
+		joined: {
+			type: Date,
+			required: true,
+			default: Date.now
+		},
+		login: {
+			type: Date
+		},
+		tokens: [
+			{
+				token: {
+					type: String,
+					required: true
+				}
+			}
+		]
+	},
+	{
+		toJSON: {
+			virtuals: true
 		}
-	]
+	}
+)
+
+customerSchema.virtual('name').get(function () {
+	return this.firstname + ' ' + this.lastname
 })
 
 customerSchema.pre('save', async function (next) {
@@ -185,6 +196,26 @@ customerSchema.statics.getCustomers = async function () {
 		throw new Error('Nothing found')
 	}
 	return Customers
+}
+
+customerSchema.statics.getPendingResellers = async (reqBody) => {
+	// Select pending reseller accounts
+
+	var filterFields = {
+		__v: false,
+		password: false,
+		tokens: false,
+		status: false
+	}
+
+	const pending = await Customer.find(
+		{
+			accountType: 'reseller',
+			'status.isResellerApproved': false
+		},
+		filterFields
+	)
+	return pending
 }
 
 customerSchema.statics.getCustomerStats = async function () {
