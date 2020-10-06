@@ -31,6 +31,9 @@ const accessTokenSchema = mongoose.Schema({
 	refreshed: {
 		type: Boolean,
 		default: false
+	},
+	modified: {
+		type: Date
 	}
 })
 

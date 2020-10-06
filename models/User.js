@@ -62,14 +62,14 @@ userSchema.pre('updateOne', async function (next) {
 	next()
 })
 
-userSchema.methods.generateAuthToken = async function () {
+userSchema.methods.generateAuthToken = async function (prevXSRF) {
 	// Generate an auth token for the user
 	const user = this
 	const xsrf = crypto.randomBytes(48).toString('base64')
 	const xsrfHash = await bcrypt.hash(xsrf, 10)
 
 	const token = jwt.sign(
-		{ _id: user._id, _xref: xsrfHash },
+		{ _id: user._id, _xref: xsrfHash, _prev: prevXSRF || '' },
 		process.env.JWT_KEY,
 		{
 			expiresIn: '15m'

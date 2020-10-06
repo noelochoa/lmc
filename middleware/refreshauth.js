@@ -18,8 +18,14 @@ const refreshauth = async (req, res, next) => {
 						error: 'Malformed request headers.'
 					})
 				}
-				const isMatch = await bcrypt.compare(csrfToken, data._xref)
-				if (!isMatch) throw new Error('Invalid CSRF Token.')
+
+				const [isMatch, isPrevMatch] = await Promise.all([
+					await bcrypt.compare(csrfToken, data._xref),
+					await bcrypt.compare(csrfToken, data._prev)
+				])
+
+				if (!isMatch && !isPrevMatch)
+					throw new Error('Invalid CSRF Token.')
 			}
 			const accToken = await AccessToken.findOne({
 				user: data._id,
@@ -31,9 +37,11 @@ const refreshauth = async (req, res, next) => {
 			if (!accToken.user.isActive) {
 				throw new Error('Unauthorized account.')
 			}
+
 			// save to req
 			req.user = accToken.user
 			req.token = accToken
+			req.prevXSRF = data._xref
 			next()
 		} catch (error) {
 			console.log('REF', error)

@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs')
+const moment = require('moment')
 const { validationResult } = require('express-validator')
 const User = require('../models/User')
 const AccessToken = require('../models/AccessToken')
@@ -124,7 +125,9 @@ exports.refresh = async (req, res) => {
 		if (req.user && req.token) {
 			if (req.token.isRefreshable) {
 				// Valid but has expired, reissue tokens
-				const { token, xsrf } = await req.user.generateAuthToken()
+				const { token, xsrf } = await req.user.generateAuthToken(
+					req.prevXSRF
+				)
 				const accToken = new AccessToken({
 					user: req.user._id,
 					token: token
@@ -132,16 +135,19 @@ exports.refresh = async (req, res) => {
 				await accToken.save()
 				res.send({ token, xsrf })
 
-				// Mark previous token as unusable
-				req.token.revoked = true
+				// Mark as refreshed
 				req.token.refreshed = true
-				req.token.save()
+				req.token.modified = new Date()
+				await req.token.save()
 				return
 			} else if (req.token.isExpired) {
 				// Refresh window expired. Needs reauthentication
 				return res.status(403).send({
 					error: 'Relogin needed due to long inactivity.'
 				})
+			} else if (req.token.modified > moment().subtract(1, 'minutes')) {
+				// Return OK but empty (multiple subsequent requests received)
+				return res.send()
 			} else {
 				// ALERT: Potentially stolen
 				// Revoke all of users tokens for safety
