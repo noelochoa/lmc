@@ -3,11 +3,12 @@ const InvalidDate = require('../models/InvalidDate')
 exports.getDates = async (req, res) => {
 	// Get all invalid date entries
 	try {
-		const dates = await InvalidDate.getInvalidDates()
+		const { year, month } = req.query
+		const dates = await InvalidDate.getInvalidDates(year, month)
 		if (!dates) {
 			return res.status(404).send({ error: 'Date entries not found.' })
 		}
-		res.status(200).send({ dates })
+		res.status(200).send(dates)
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
