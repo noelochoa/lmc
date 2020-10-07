@@ -6,12 +6,11 @@ const CommentsController = require('../controllers/comments')
 const auth = require('../middleware/auth')
 const storeauth = require('../middleware/storeauth')
 
+router.get('/recent', CommentsController.getRecentComments)
 router.get('/:productID', CommentsController.getComments)
 router.post(
 	'/',
-	check('comment')
-		.escape()
-		.trim(),
+	check('comment').escape().trim(),
 	storeauth,
 	CommentsController.postComment
 )

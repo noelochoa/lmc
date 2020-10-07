@@ -150,7 +150,7 @@ exports.refresh = async (req, res) => {
 				return res.send()
 			} else {
 				// ALERT: Potentially stolen
-				// Revoke all of users tokens for safety
+				// Revoke all user's tokens for safety
 				await AccessToken.updateMany(
 					{ user: req.user._id },
 					{ $set: { revoked: true } },

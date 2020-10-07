@@ -49,6 +49,19 @@ exports.getComments = async (req, res) => {
 	}
 }
 
+exports.getRecentComments = async (req, res) => {
+	// get Recent Comments for dashboard
+	try {
+		const comments = await Comment.find()
+			.populate('author', 'firstname lastname name')
+			.sort({ created: -1 })
+			.limit(5)
+		res.status(200).send(comments)
+	} catch (error) {
+		res.status(400).send({ error: error.message })
+	}
+}
+
 exports.editComment = async (req, res) => {
 	// Edit comment details
 	if (req.params.commentID) {
