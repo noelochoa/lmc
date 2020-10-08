@@ -7,7 +7,14 @@ const auth = require('../middleware/auth')
 const refreshauth = require('../middleware/refreshauth')
 
 router.get('/', auth, UsersController.getAllUsers)
-router.post('/', auth, UsersController.createNewUser)
+router.post(
+	'/',
+	check('email').isEmail(),
+	check('name').trim().notEmpty(),
+	check('password').isLength({ min: 6 }),
+	auth,
+	UsersController.createNewUser
+)
 router.post(
 	'/login',
 	check('email').isEmail(),
@@ -16,8 +23,14 @@ router.post(
 )
 router.post('/refresh', refreshauth, UsersController.refresh)
 router.post(
+	'/edit',
+	check('name').trim().notEmpty(),
+	auth,
+	UsersController.changeName
+)
+router.post(
 	'/changepw',
-	check('currpw').isLength({ min: 6 }),
+	check('prevpw').isLength({ min: 6 }),
 	check('newpw').isLength({ min: 6 }),
 	check('reppw').isLength({ min: 6 }),
 	auth,

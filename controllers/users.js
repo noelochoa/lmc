@@ -20,13 +20,17 @@ exports.getAllUsers = async (req, res) => {
 exports.createNewUser = async (req, res) => {
 	// Create a new user
 	try {
-		const user = new User(req.body)
-		if (user) {
-			await user.save()
-			res.status(201).send({ user })
-		} else {
-			res.status(400).send({ error: 'Cannot create user.' })
+		const errors = validationResult(req)
+		if (!errors.isEmpty()) {
+			return res.status(422).send({ error: 'Invalid input(s) format.' })
 		}
+		const user = new User(req.body)
+		const count = await User.countDocuments({ email: user.email })
+		if (count > 0) {
+			return res.status(400).send({ error: 'Email is already used.' })
+		}
+		await user.save()
+		res.status(201).send({ message: 'User has been created.' })
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
@@ -91,29 +95,47 @@ exports.logoutAll = async (req, res) => {
 	}
 }
 
+exports.changeName = async (req, res) => {
+	try {
+		const errors = validationResult(req)
+		if (!errors.isEmpty()) {
+			return res.status(422).send({ error: 'Invalid input(s) format.' })
+		}
+		const { name } = req.body
+		req.user.name = name
+		await req.user.save()
+		res.status(200).send({ message: 'Account name has been changed', name })
+	} catch (error) {
+		res.status(500).send({ error: error.message })
+	}
+}
+
 exports.changePW = async (req, res) => {
 	try {
 		const errors = validationResult(req)
 		if (!errors.isEmpty()) {
 			return res.status(422).send({ error: 'Invalid input(s) format.' })
 		}
-		const { currpw, newpw, reppw } = req.body
-		const isPasswordMatch = await bcrypt.compare(currpw, req.user.password)
-
-		if (!isPasswordMatch) {
-			return res
-				.status(400)
-				.send({ error: 'Current password does not match' })
-		}
+		const { prevpw, newpw, reppw } = req.body
 		if (newpw !== reppw) {
 			return res.status(400).send({
 				error: 'New and retyped passwords do not match'
 			})
 		}
-
+		const isPasswordMatch = await bcrypt.compare(prevpw, req.user.password)
+		if (!isPasswordMatch) {
+			return res
+				.status(400)
+				.send({ error: 'Current account password is different.' })
+		}
+		if (prevpw === newpw) {
+			return res.status(400).send({
+				error: 'New and current passwords should NOT be the same.'
+			})
+		}
 		req.user.password = newpw
 		await req.user.save()
-		res.status(200).send({ message: 'Password has been changed' })
+		res.status(200).send({ message: 'Password has been changed.' })
 	} catch (error) {
 		res.status(500).send({ error: error.message })
 	}
