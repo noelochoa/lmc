@@ -4,10 +4,27 @@ const Product = require('../models/Product')
 exports.getCategories = async (req, res) => {
 	// Get all categories
 	try {
-		const categories = await Category.getCategories()
+		let categories = {}
+		if (req.params.categoryID) {
+			categories = await Category.findOne({
+				_id: req.params.categoryID
+			})
+		} else {
+			categories = await Category.find()
+		}
 		if (!categories) {
 			return res.status(404).send({ error: 'Categories not found.' })
 		}
+		res.status(200).send(categories)
+	} catch (error) {
+		res.status(400).send({ error: error.message })
+	}
+}
+
+exports.getAllCategories = async (req, res) => {
+	// Get all categories
+	try {
+		const categories = await Category.getAllCategories()
 		res.status(200).send(categories)
 	} catch (error) {
 		res.status(400).send({ error: error.message })
@@ -22,7 +39,7 @@ exports.createCategory = async (req, res) => {
 			await category.save()
 			res.status(200).send(category)
 		} else {
-			res.status(500).send({ error: 'Cannot post category.' })
+			res.status(500).send({ error: 'Cannot add new category.' })
 		}
 	} catch (error) {
 		res.status(400).send({ error: error.message })
@@ -49,7 +66,7 @@ exports.patchCategory = async (req, res) => {
 			}
 			res.status(200).send({ message: 'Successfully updated.' })
 		} catch (error) {
-			res.status(400).send({ error: error.message })
+			res.status(400).send({ error: 'Error updating category.' })
 		}
 	} else {
 		res.status(400).send({ error: 'CategoryID is invalid.' })

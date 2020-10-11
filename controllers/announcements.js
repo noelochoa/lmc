@@ -1,30 +1,30 @@
 const Announcement = require('../models/Announcement')
+const mongoose = require('mongoose')
 
 exports.getAnnouncement = async (req, res) => {
 	// Get announcement for the current datetime
-	try {
-		const psa = await Announcement.getAnnouncement()
-		if (!psa) {
-			return res
-				.status(404)
-				.send({ error: 'Announcement entries not found.' })
+	if (req.params.psaID) {
+		try {
+			const psa = await Announcement.getAnnouncement(req.params.psaID)
+			if (!psa) {
+				return res
+					.status(404)
+					.send({ error: 'Announcement(s) not found.' })
+			}
+			res.status(200).send(psa)
+		} catch (error) {
+			res.status(400).send({ error: error.message })
 		}
-		res.status(200).send({ psa })
-	} catch (error) {
-		res.status(400).send({ error: error.message })
+	} else {
+		res.status(400).send({ error: 'Announcement ID is missing.' })
 	}
 }
 
 exports.getAllAnnouncements = async (req, res) => {
-	// Get all announcement entries
+	// Get all announcements
 	try {
-		const psas = await Announcement.find().sort({ start: -1 })
-		if (!psas) {
-			return res
-				.status(404)
-				.send({ error: 'Announcement entries not found.' })
-		}
-		res.status(200).send({ psas })
+		const psas = await Announcement.getAll()
+		res.status(200).send(psas)
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
@@ -34,12 +34,8 @@ exports.createAnnouncement = async (req, res) => {
 	// Create announcement date entry
 	try {
 		const psa = new Announcement(req.body)
-		if (psa) {
-			await psa.save()
-			res.status(200).send({ message: 'Posted new announcement.', psa })
-		} else {
-			res.status(500).send({ error: 'Cannot create Announcement entry.' })
-		}
+		await psa.save()
+		res.status(200).send({ message: 'Posted new announcement.', psa })
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}

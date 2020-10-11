@@ -1,13 +1,27 @@
 const Discount = require('../models/Discount')
 
-exports.getDates = async (req, res) => {
+exports.getAllDiscounts = async (req, res) => {
 	// Get all discount date entries
 	try {
-		const discounts = await Discount.getDiscounts()
-		if (!discounts) {
-			return res.status(404).send({ error: 'Date entries not found.' })
+		const discounts = await Discount.getAllDiscounts()
+		res.status(200).send(discounts)
+	} catch (error) {
+		res.status(400).send({ error: error.message })
+	}
+}
+
+exports.getDiscounts = async (req, res) => {
+	// Get discount date entries
+	try {
+		let discounts = {}
+		if (req.params.discountID) {
+			discounts = await Discount.findOne({
+				_id: req.params.discountID
+			})
+		} else {
+			discounts = await Discount.getDiscounts()
 		}
-		res.status(200).send({ discounts })
+		res.status(200).send(discounts)
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}

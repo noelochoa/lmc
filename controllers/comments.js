@@ -15,18 +15,21 @@ exports.postComment = async (req, res) => {
 	}
 }
 
-exports.postComment = async (req, res) => {
-	// Post comment
-	try {
-		const comment = new Comment(req.body)
-		if (comment) {
-			await comment.postComment()
+exports.getComment = async (req, res) => {
+	// getComments for product
+	if (req.params.commentID) {
+		try {
+			const comment = await Comment.findOne({
+				_id: req.params.commentID
+			})
+				.populate('author', 'lastname firstname name')
+				.populate('product', 'name')
 			res.status(200).send(comment)
-		} else {
-			res.status(500).send({ error: 'Cannot post comment.' })
+		} catch (error) {
+			res.status(400).send({ error: error.message })
 		}
-	} catch (error) {
-		res.status(400).send({ error: error.message })
+	} else {
+		res.status(404).send({ error: 'No comment id provided.' })
 	}
 }
 
@@ -46,6 +49,19 @@ exports.getComments = async (req, res) => {
 		}
 	} else {
 		res.status(404).send({ error: 'No product id provided.' })
+	}
+}
+
+exports.getAllComments = async (req, res) => {
+	// get all comments
+	try {
+		const comments = await Comment.find()
+			.populate('author', 'firstname lastname name')
+			.populate('product', 'name seoname')
+			.sort({ created: -1 })
+		res.status(200).send(comments)
+	} catch (error) {
+		res.status(400).send({ error: error.message })
 	}
 }
 

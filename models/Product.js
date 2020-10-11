@@ -4,138 +4,145 @@ const Category = require('./Category')
 const Discount = require('./Discount')
 const Comment = require('./Comment')
 
-const productSchema = mongoose.Schema({
-	name: {
-		type: String,
-		required: true,
-		trim: true
-	},
-	seoname: {
-		type: String,
-		unique: true,
-		trim: true
-	},
-	category: {
-		type: mongoose.Types.ObjectId,
-		ref: 'Category',
-		required: true,
-		validate: {
-			validator: (val) => {
-				return Category.exists({ _id: val })
-			},
-			message: 'Category is invalid'
-		}
-	},
-	isActive: {
-		type: Boolean,
-		required: true,
-		default: true
-	},
-	isFeatured: {
-		type: Boolean,
-		required: true,
-		default: false
-	},
-	description: {
-		type: String,
-		required: true,
-		trim: true
-	},
-	colors: [
-		{
+const productSchema = mongoose.Schema(
+	{
+		name: {
 			type: String,
-			trim: true,
+			required: true,
+			trim: true
+		},
+		seoname: {
+			type: String,
+			unique: true,
+			trim: true
+		},
+		category: {
+			type: mongoose.Types.ObjectId,
+			ref: 'Category',
+			required: true,
 			validate: {
 				validator: (val) => {
-					return /^#([0-9A-F]{3}){1,2}$/i.test(val)
+					return Category.exists({ _id: val })
 				},
-				message: 'Invalid HEX color code'
+				message: 'Category is invalid'
 			}
-		}
-	],
-	basePrice: {
-		type: Number,
-		required: true,
-		min: 1
-	},
-	details: [{}],
-	options: [
-		{
-			_id: {
+		},
+		isActive: {
+			type: Boolean,
+			required: true,
+			default: true
+		},
+		isFeatured: {
+			type: Boolean,
+			required: true,
+			default: false
+		},
+		description: {
+			type: String,
+			required: true,
+			trim: true
+		},
+		colors: [
+			{
 				type: String,
-				trim: true
-			},
-			attribute: {
-				type: String,
-				required: true,
 				trim: true,
-				unique: true
-			},
-			choices: [
-				{
-					_id: {
-						type: String,
-						trim: true
+				validate: {
+					validator: (val) => {
+						return /^#([0-9A-F]{3}){1,2}$/i.test(val)
 					},
-					value: {
-						type: String,
-						required: true,
-						trim: true
-					},
-					price: {
-						type: Number,
-						required: true,
-						default: 0
-					},
-					available: {
-						type: Boolean,
-						required: true,
-						default: true
-					}
-					// add difficulty?
+					message: 'Invalid HEX color code'
 				}
-			],
-			userCustomizable: {
-				type: Boolean,
-				required: true,
-				default: false
 			}
-		}
-	],
-	sold: {
-		type: Number,
-		default: 0
-	},
-	minOrderQuantity: {
-		type: Number,
-		required: true,
-		default: 1
-	},
-	created: {
-		type: Date,
-		required: true,
-		default: Date.now
-	},
-	images: [
-		{
-			image: {
-				type: String,
-				required: true
-			},
-			imageType: {
-				type: String,
-				required: true,
-				enum: ['gallery', 'thumbnail', 'banner']
+		],
+		basePrice: {
+			type: Number,
+			required: true,
+			min: 1
+		},
+		details: [{}],
+		options: [
+			{
+				_id: {
+					type: String,
+					trim: true
+				},
+				attribute: {
+					type: String,
+					required: true,
+					trim: true,
+					unique: true
+				},
+				choices: [
+					{
+						_id: {
+							type: String,
+							trim: true
+						},
+						value: {
+							type: String,
+							required: true,
+							trim: true
+						},
+						price: {
+							type: Number,
+							required: true,
+							default: 0
+						},
+						available: {
+							type: Boolean,
+							required: true,
+							default: true
+						}
+						// add difficulty?
+					}
+				],
+				userCustomizable: {
+					type: Boolean,
+					required: true,
+					default: false
+				}
 			}
+		],
+		sold: {
+			type: Number,
+			default: 0
+		},
+		minOrderQuantity: {
+			type: Number,
+			required: true,
+			default: 1
+		},
+		created: {
+			type: Date,
+			required: true,
+			default: Date.now
+		},
+		images: [
+			{
+				image: {
+					type: String,
+					required: true
+				},
+				imageType: {
+					type: String,
+					required: true,
+					enum: ['gallery', 'thumbnail', 'banner']
+				}
+			}
+		],
+		comments: [
+			{
+				type: mongoose.Types.ObjectId,
+				ref: 'Comment'
+			}
+		]
+	},
+	{
+		toJSON: {
+			virtuals: true
 		}
-	],
-	comments: [
-		{
-			type: mongoose.Types.ObjectId,
-			ref: 'Comment'
-		}
-	]
-})
+	}
+)
 
 productSchema.pre('save', async function (next) {
 	// Create slug for name on save
@@ -259,6 +266,7 @@ productSchema.statics.getProductDetailsbyCategory = async (category) => {
 		{
 			$project: {
 				_id: -1,
+				name: 1,
 				seoname: 1,
 				basePrice: 1,
 				category: 1,

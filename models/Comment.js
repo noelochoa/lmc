@@ -29,25 +29,34 @@ const commentSchema = mongoose.Schema(
 				message: 'Product id is invalid'
 			}
 		},
-		parent: {
-			type: mongoose.Types.ObjectId,
-			ref: 'Comment',
-			validate: {
-				validator: (val) => {
-					return Comment.exists({ _id: val })
-				},
-				message: 'Parent comment is invalid'
-			}
-		},
+		// parent: {
+		// 	type: mongoose.Types.ObjectId,
+		// 	ref: 'Comment',
+		// 	validate: {
+		// 		validator: (val) => {
+		// 			return Comment.exists({ _id: val })
+		// 		},
+		// 		message: 'Parent comment is invalid'
+		// 	}
+		// },
 		comment: {
 			type: String,
 			required: true,
 			trim: true
 		},
+		reply: {
+			type: String,
+			trim: true
+		},
+		replyAuthor: {
+			type: String,
+			trim: true,
+			max: 256
+		},
 		isFlagged: {
 			type: Boolean,
 			required: true,
-			default: true
+			default: false
 		},
 		created: {
 			type: Date,

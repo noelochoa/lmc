@@ -47,20 +47,20 @@ const discountSchema = mongoose.Schema({
 	}
 })
 
-discountSchema.pre('save', async function(next) {
+discountSchema.pre('save', async function (next) {
 	// Run validator manually on save
 	checkStartEndDate(this.start, this.end)
 	next()
 })
 
-discountSchema.pre('updateOne', async function(next) {
+discountSchema.pre('updateOne', async function (next) {
 	// Run validator manually on updateOne
 	const updateData = this.getUpdate().$set
 	checkStartEndDate(updateData.start, updateData.end)
 	next()
 })
 
-discountSchema.statics.getDiscounts = async function() {
+discountSchema.statics.getDiscounts = async function () {
 	const dates = await Discount.find()
 		.populate('products', '_id name seoname pricing')
 		.sort({ start: -1 })
@@ -68,6 +68,43 @@ discountSchema.statics.getDiscounts = async function() {
 		throw new Error('Nothing found')
 	}
 	return dates
+}
+
+discountSchema.statics.getAllDiscounts = async function () {
+	const categories = await Discount.aggregate([
+		{
+			$lookup: {
+				from: 'Products',
+				localField: 'products',
+				foreignField: '_id',
+				as: 'products'
+			}
+		},
+		{
+			$project: {
+				id: '$_id',
+				percent: 1,
+				start: 1,
+				end: 1,
+				target: 1,
+				count: { $size: '$products' },
+				products: {
+					$map: {
+						input: '$products',
+						as: 'prod',
+						in: {
+							id: '$$prod._id',
+							name: '$$prod.name',
+							seo: '$$prod.seoname',
+							basePrice: '$$prod.basePrice'
+						}
+					}
+				}
+			}
+		}
+	])
+
+	return categories
 }
 
 const Discount = mongoose.model('Discount', discountSchema, 'Discounts')

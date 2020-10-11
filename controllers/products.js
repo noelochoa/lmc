@@ -6,7 +6,7 @@ const Comment = require('../models/Comment')
 exports.getAllProducts = async (req, res) => {
 	// Dump all
 	try {
-		const products = await Product.find({ isActive: true }).sort({
+		const products = await Product.find().sort({
 			created: -1
 		})
 		if (!products || products.length == 0) {

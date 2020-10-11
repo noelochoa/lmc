@@ -7,7 +7,9 @@ const auth = require('../middleware/auth')
 const storeauth = require('../middleware/storeauth')
 
 router.get('/recent', CommentsController.getRecentComments)
-router.get('/:productID', CommentsController.getComments)
+router.get('/', CommentsController.getAllComments)
+router.get('/:commentID', CommentsController.getComment)
+router.get('/product/:productID', CommentsController.getComments)
 router.post(
 	'/',
 	check('comment').escape().trim(),

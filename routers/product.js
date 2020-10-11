@@ -18,6 +18,7 @@ router.get(
 	check('productID').escape().trim(),
 	ProductsController.getActiveProduct
 )
+router.get('/any', auth, ProductsController.getAllProducts)
 router.get('/', ProductsController.getActiveProducts)
 router.get('/all', ProductsController.getActiveProducts)
 router.get('/stats', ProductsController.getProductStats)

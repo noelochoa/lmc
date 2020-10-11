@@ -3,7 +3,7 @@ const OrderStatus = require('../models/OrderStatus')
 const Product = require('../models/Product')
 const Category = require('../models/Category')
 const Discount = require('../models/Discount')
-const TrustedComms = require('twilio/lib/rest/preview/TrustedComms')
+// const TrustedComms = require('twilio/lib/rest/preview/TrustedComms')
 // const validator = require('validator')
 
 const optionsSchema = mongoose.Schema(
