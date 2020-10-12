@@ -71,7 +71,7 @@ discountSchema.statics.getDiscounts = async function () {
 }
 
 discountSchema.statics.getAllDiscounts = async function () {
-	const categories = await Discount.aggregate([
+	const discounts = await Discount.aggregate([
 		{
 			$lookup: {
 				from: 'Products',
@@ -104,7 +104,7 @@ discountSchema.statics.getAllDiscounts = async function () {
 		}
 	])
 
-	return categories
+	return discounts
 }
 
 const Discount = mongoose.model('Discount', discountSchema, 'Discounts')
