@@ -84,6 +84,7 @@ orderSchema.pre('save', async function (next) {
 	next()
 })
 
+/*
 orderSchema.statics.getOrderStats = async function () {
 	const today = new Date()
 	const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
@@ -147,7 +148,7 @@ orderSchema.statics.getOrderStats = async function () {
 		throw new Error('Error querying order stats.')
 	}
 	return stats[0]
-}
+}*/
 
 orderSchema.statics.getOrderDetails = async function (searchParam) {
 	// Get product details of order
