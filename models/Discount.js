@@ -24,7 +24,8 @@ const discountSchema = mongoose.Schema({
 	},
 	end: {
 		type: Date,
-		required: true
+		required: true,
+		expires: 0
 	},
 	target: {
 		type: String,

@@ -24,7 +24,8 @@ const announcementSchema = mongoose.Schema(
 		},
 		end: {
 			type: Date,
-			required: true
+			required: true,
+			expires: 0
 		},
 		message: {
 			type: String,

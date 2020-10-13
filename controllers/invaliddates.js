@@ -4,13 +4,26 @@ exports.getDates = async (req, res) => {
 	// Get all invalid date entries
 	try {
 		const { year, month } = req.query
-		const dates = await InvalidDate.getInvalidDates(year, month)
-		if (!dates) {
-			return res.status(404).send({ error: 'Date entries not found.' })
-		}
-		res.status(200).send(dates)
+		const holidays = await InvalidDate.getInvalidDates(year, month)
+		res.status(200).send(holidays)
 	} catch (error) {
 		res.status(400).send({ error: error.message })
+	}
+}
+
+exports.getDate = async (req, res) => {
+	// Get invalid date details
+	if (req.params.invalidDateID) {
+		try {
+			const holiday = await InvalidDate.findOne({
+				_id: req.params.invalidDateID
+			})
+			res.status(200).send(holiday)
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(400).send({ error: 'Date entry ID is invalid.' })
 	}
 }
 

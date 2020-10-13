@@ -17,21 +17,29 @@ const checkStartEndDate = (start, end) => {
 	return true
 }
 
-const invalidDateSchema = mongoose.Schema({
-	start: {
-		type: Date,
-		required: true
+const invalidDateSchema = mongoose.Schema(
+	{
+		start: {
+			type: Date,
+			required: true
+		},
+		end: {
+			type: Date,
+			required: true,
+			expires: 0
+		},
+		reason: {
+			type: String,
+			required: true,
+			default: 'Business Holiday'
+		}
 	},
-	end: {
-		type: Date,
-		required: true
-	},
-	reason: {
-		type: String,
-		required: true,
-		default: 'Business Holiday'
+	{
+		toJSON: {
+			virtuals: true
+		}
 	}
-})
+)
 
 invalidDateSchema.pre('save', async function (next) {
 	// Run validator manually on save
@@ -67,16 +75,19 @@ invalidDateSchema.statics.getInvalidDates = async function (year, month) {
 		qmonth = month - 1
 	}
 	const qdate = moment({ year: qyear, month: qmonth })
-	const dates = await InvalidDate.find({
-		$and: [
-			{
-				end: { $not: { $lt: qdate.startOf('month').toDate() } }
-			},
-			{
-				start: { $not: { $gt: qdate.endOf('month').toDate() } }
-			}
-		]
-	}).sort({ start: 1 })
+	const dates = await InvalidDate.find(
+		{
+			$and: [
+				{
+					end: { $not: { $lt: qdate.startOf('month').toDate() } }
+				},
+				{
+					start: { $not: { $gt: qdate.endOf('month').toDate() } }
+				}
+			]
+		},
+		'id start end reason'
+	).sort({ start: 1 })
 
 	return dates
 }

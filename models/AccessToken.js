@@ -22,7 +22,7 @@ const accessTokenSchema = mongoose.Schema({
 		type: Date,
 		required: true,
 		default: () => Date.now() + 3600 * 24 * 7 * 1000,
-		expires: '1w'
+		expires: 0
 	},
 	revoked: {
 		type: Boolean,
