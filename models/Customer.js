@@ -42,12 +42,18 @@ const customerSchema = mongoose.Schema(
 		},
 		phonenumber: {
 			type: String,
+			trim: true,
 			unique: true,
 			sparse: true,
 			validate: (value) => {
-				if (!validator.isMobilePhone(value)) {
-					throw new Error('Invalid phone number')
-				}
+				if (!value) return true
+				const mobilePattern = /^\+\d{1,3}\s\d{1,14}(\s\d{1,13})?/
+				return mobilePattern.test(
+					value.replace(new RegExp(/[-()]/g), '')
+				)
+				// if (!validator.isMobilePhone(rawNum)) {
+				// 	throw new Error('Invalid phone number')
+				// }
 			}
 		},
 		password: {
@@ -189,12 +195,19 @@ customerSchema.statics.removeToken = async (token) => {
 	return false
 }
 
-customerSchema.statics.getCustomers = async function () {
+customerSchema.statics.getCustomers = async function (type) {
 	// Get all customers
-	const Customers = await Customer.find()
-	if (!Customers) {
-		throw new Error('Nothing found')
+	let Customers
+	if (!type || type.toLowerCase() === 'all') {
+		Customers = await Customer.find().select(
+			'id firstname lastname accountType status joined login'
+		)
+	} else {
+		Customers = await Customer.find({
+			accountType: { $regex: type, $options: 'i' }
+		}).select('id firstname lastname accountType status joined login')
 	}
+
 	return Customers
 }
 

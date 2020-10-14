@@ -11,15 +11,32 @@ const Token = require('../models/Token')
 const ResetToken = require('../models/ResetToken')
 
 exports.getAllCustomers = async (req, res) => {
-	// Dump all
+	// Get all accounts
 	try {
-		const customers = await Customer.getCustomers()
-		if (!customers) {
-			return res.status(404).send({ error: 'Customers not found.' })
-		}
+		const { type } = req.query
+		const customers = await Customer.getCustomers(type)
 		res.status(200).send(customers)
 	} catch (error) {
 		res.status(400).send({ error: error.message })
+	}
+}
+
+exports.getCustomerDetails = async (req, res) => {
+	// Get account details
+	if (req.params.accountID) {
+		try {
+			const customer = await Customer.findOne({
+				_id: req.params.accountID
+			}).select('-password')
+			if (!customer) {
+				return res.status(404).send({ error: 'Unknown account.' })
+			}
+			res.status(200).send(customer)
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(404).send({ error: 'Account ID is missing' })
 	}
 }
 
@@ -401,6 +418,34 @@ exports.logoutAll = async (req, res) => {
 
 exports.patchCustomer = async (req, res) => {
 	// Edit Customer details
+	if (req.params.accountID) {
+		try {
+			const updateProps = {}
+			for (let op of req.body) {
+				updateProps[op.property] = op.value
+			}
+			console.log(updateProps)
+			const result = await Customer.updateOne(
+				{ _id: req.params.accountID },
+				{ $set: updateProps },
+				{ runValidators: true }
+			)
+			if (!result || result.n == 0) {
+				return res
+					.status(404)
+					.send({ error: 'Error updating customer details.' })
+			}
+			res.status(200).send({ message: 'Successfully updated.' })
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(400).send({ error: 'CustomerID is invalid.' })
+	}
+}
+
+/*exports.patchCustomer = async (req, res) => {
+	// Edit Customer details
 	if (req.customer) {
 		try {
 			const updateProps = {}
@@ -424,4 +469,4 @@ exports.patchCustomer = async (req, res) => {
 	} else {
 		res.status(400).send({ error: 'CustomerID is invalid.' })
 	}
-}
+}*/

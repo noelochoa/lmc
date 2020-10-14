@@ -1,6 +1,16 @@
 const Announcement = require('../models/Announcement')
 const mongoose = require('mongoose')
 
+exports.getAllAnnouncements = async (req, res) => {
+	// Get all announcements
+	try {
+		const psas = await Announcement.getAll()
+		res.status(200).send(psas)
+	} catch (error) {
+		res.status(400).send({ error: error.message })
+	}
+}
+
 exports.getAnnouncement = async (req, res) => {
 	// Get announcement for the current datetime
 	if (req.params.psaID) {
@@ -17,16 +27,6 @@ exports.getAnnouncement = async (req, res) => {
 		}
 	} else {
 		res.status(400).send({ error: 'Announcement ID is missing.' })
-	}
-}
-
-exports.getAllAnnouncements = async (req, res) => {
-	// Get all announcements
-	try {
-		const psas = await Announcement.getAll()
-		res.status(200).send(psas)
-	} catch (error) {
-		res.status(400).send({ error: error.message })
 	}
 }
 
