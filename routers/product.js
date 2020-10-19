@@ -13,12 +13,30 @@ const upload = multer({
 const ProductsController = require('../controllers/products')
 const auth = require('../middleware/auth')
 
+// PROTECTED
+router.get('/cms', auth, ProductsController.getAllProducts)
+router.get('/cms/:category', auth, ProductsController.getAllProducts)
+router.post('/', auth, ProductsController.createProduct)
+router.patch('/multi', auth, ProductsController.patchProducts)
+router.patch('/:productID', auth, ProductsController.patchProduct)
+router.patch(
+	'/options/:productID',
+	auth,
+	ProductsController.patchProductOptions
+)
+router.patch(
+	'/images/:productID',
+	auth,
+	upload.array('image'),
+	ProductsController.patchProductImages
+)
+
+// PUBLIC ROUTES
 router.get(
 	'/id/:productID',
 	check('productID').escape().trim(),
 	ProductsController.getActiveProduct
 )
-router.get('/any', auth, ProductsController.getAllProducts)
 router.get('/', ProductsController.getActiveProducts)
 router.get('/all', ProductsController.getActiveProducts)
 router.get('/stats', ProductsController.getProductStats)
@@ -31,19 +49,6 @@ router.get(
 	'/:category/:productName',
 	check('productName').escape().trim(),
 	ProductsController.getActiveProductByName
-)
-router.post('/', ProductsController.createProduct)
-router.patch('/:productID', auth, ProductsController.patchProduct)
-router.patch(
-	'/options/:productID',
-	auth,
-	ProductsController.patchProductOptions
-)
-router.patch(
-	'/images/:productID',
-	auth,
-	upload.array('image'),
-	ProductsController.patchProductImages
 )
 
 module.exports = router

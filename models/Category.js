@@ -15,6 +15,14 @@ const categorySchema = mongoose.Schema({
 	}
 })
 
+categorySchema.pre('save', async function (next) {
+	if (this.name) {
+		// Ucfirst
+		this.name = this.name.charAt(0).toUpperCase() + this.name.slice(1)
+	}
+	next()
+})
+
 categorySchema.statics.getAllCategories = async function () {
 	const categories = await Category.aggregate([
 		{

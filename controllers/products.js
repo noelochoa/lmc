@@ -3,25 +3,28 @@ const Category = require('../models/Category')
 const Discount = require('../models/Discount')
 const Comment = require('../models/Comment')
 
-exports.getAllProducts = async (req, res) => {
-	// Dump all
+exports.getProductStats = async (req, res) => {
 	try {
-		const products = await Product.find().sort({
-			created: -1
-		})
-		if (!products || products.length == 0) {
-			return res.status(404).send({ error: 'Products not found.' })
-		}
-		res.status(200).send({ products: products, count: products.length })
+		const stats = await Product.getProductStats()
+		res.status(200).send(stats)
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
 }
 
-exports.getProductStats = async (req, res) => {
+exports.getAllProducts = async (req, res) => {
+	// Dump all
 	try {
-		const stats = await Product.getProductStats()
-		res.status(200).send(stats)
+		const category =
+			req.params.category && req.params.category !== 'all'
+				? req.params.category
+				: '.*'
+		const products = await Product.getAllProductsByCategory(category)
+
+		res.status(200).send({
+			products: products,
+			count: products.length
+		})
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
@@ -135,6 +138,33 @@ exports.patchProduct = async (req, res) => {
 	}
 }
 
+exports.patchProducts = async (req, res) => {
+	// Edit product details
+	if (req.body && req.body.selected) {
+		try {
+			const updateProps = {}
+			for (let op of req.body.props) {
+				updateProps[op.property] = op.value
+			}
+			const result = await Product.updateMany(
+				{ _id: { $in: req.body.selected } },
+				{ $set: updateProps },
+				{ runValidators: true }
+			)
+			if (!result || result.n == 0) {
+				return res
+					.status(404)
+					.send({ error: 'Error updating product/s.' })
+			}
+			res.status(200).send({ message: 'Successfully updated.' })
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(400).send({ error: 'ProductIDs not suppplied.' })
+	}
+}
+
 exports.patchProductOptions = async (req, res) => {
 	// Edit product options
 
@@ -187,16 +217,15 @@ exports.patchProductOptions = async (req, res) => {
 }
 
 exports.patchProductImages = async (req, res) => {
-	// Edit product images
-	if (!req.files.length || req.files.length < 1) {
-		return res.status(400).send({
-			error:
-				'File upload failed. Limit the files to 4MB and ensure that the images are of JPG/PNG type.'
-		})
-	}
-
 	if (req.params.productID) {
 		try {
+			// Edit product images
+			if (!req.files.length || req.files.length < 1) {
+				return res.status(400).send({
+					error:
+						'File upload failed. Limit the files to 4MB and ensure that the images are of JPG/PNG type.'
+				})
+			}
 			const product = await Product.findOne({ _id: req.params.productID })
 			if (!product) {
 				return res
@@ -214,7 +243,8 @@ exports.patchProductImages = async (req, res) => {
 			}
 			product.images = updatedImgs
 			await product.save()
-			res.status(200).send({ message: 'Successfully updated.' })
+			// send list of new img filenames
+			res.status(200).send(updatedImgs.map((item) => item.image))
 		} catch (error) {
 			res.status(400).send({ error: error.message })
 		}

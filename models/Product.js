@@ -227,6 +227,47 @@ productSchema.statics.addNewComment = async (productID, commentID) => {
 	return product
 }
 
+productSchema.statics.getAllProductsByCategory = async (category) => {
+	// Get product details belonging to supplied category
+	const products = await Product.aggregate([
+		{
+			$lookup: {
+				from: Category.collection.name,
+				localField: 'category',
+				foreignField: '_id',
+				as: 'category'
+			}
+		},
+		{ $unwind: '$category' },
+		{
+			$match: {
+				'category.name': {
+					$in: [new RegExp('^' + category + '$', 'i')]
+				}
+			}
+		},
+		{
+			$project: {
+				id: '$_id',
+				name: 1,
+				seoname: 1,
+				basePrice: 1,
+				category: '$category.name',
+				isActive: 1,
+				isFeatured: 1,
+				images: 1,
+				discount: 1,
+				created: 1,
+				sold: 1
+			}
+		}
+	]).sort({
+		created: -1
+	})
+
+	return products
+}
+
 productSchema.statics.getProductDetailsbyCategory = async (category) => {
 	// Get product details belonging to supplied category
 	const products = await Product.aggregate([

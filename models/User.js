@@ -64,7 +64,7 @@ userSchema.methods.generateAuthToken = async function (prevXSRF) {
 		{ _id: user._id, _xref: xsrfHash, _prev: prevXSRF || '' },
 		process.env.JWT_KEY,
 		{
-			expiresIn: '15m'
+			expiresIn: '1h'
 		}
 	)
 	//user.tokens = user.tokens.concat({ token })

@@ -2,17 +2,17 @@ const mkdirp = require('mkdirp')
 
 // Multer product images settings
 const imageStorage = {
-	destination: async (req, file, callback) => {
+	destination: async (req, file, cb) => {
 		const { productID } = req.params
 		if (productID) {
 			const path = `./images/${productID}`
 			await mkdirp.sync(path)
-			callback(null, path)
+			cb(null, path)
 		} else {
-			callback(null, './images/')
+			cb(null, './images/')
 		}
 	},
-	filename: function(req, file, cb) {
+	filename: function (req, file, cb) {
 		const uniqkey = Math.round(Math.random() * 1e9)
 		cb(null, `${file.fieldname}_${uniqkey}_${file.originalname}`)
 	}
