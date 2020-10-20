@@ -241,7 +241,7 @@ exports.patchProductImages = async (req, res) => {
 					imageType: req.body.imageType || 'gallery'
 				})
 			}
-			product.images = updatedImgs
+			product.images = [].concat(product.images, updatedImgs)
 			await product.save()
 			// send list of new img filenames
 			res.status(200).send(updatedImgs.map((item) => item.image))
