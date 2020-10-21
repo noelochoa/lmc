@@ -16,6 +16,7 @@ const auth = require('../middleware/auth')
 // PROTECTED
 router.get('/cms', auth, ProductsController.getAllProducts)
 router.get('/cms/:category', auth, ProductsController.getAllProducts)
+router.get('/cms/item/:productID', auth, ProductsController.getProduct)
 router.post('/', auth, ProductsController.createProduct)
 router.patch('/multi', auth, ProductsController.patchProducts)
 router.patch('/:productID', auth, ProductsController.patchProduct)

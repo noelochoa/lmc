@@ -12,6 +12,27 @@ exports.getProductStats = async (req, res) => {
 	}
 }
 
+exports.getProduct = async (req, res) => {
+	// Get product details
+	if (req.params.productID) {
+		try {
+			const product = await Product.findOne({
+				_id: req.params.productID
+			})
+			if (product && product.images.length > 0) {
+				product.images = product.images.map((item) => {
+					item.image = item.image.replace(/\\/g, '/')
+					return item
+				})
+			}
+			res.status(200).send(product)
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(400).send({ error: 'Product ID missing or invalid.' })
+	}
+}
 exports.getAllProducts = async (req, res) => {
 	// Dump all
 	try {
