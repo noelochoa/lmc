@@ -2,6 +2,7 @@ const Product = require('../models/Product')
 const Category = require('../models/Category')
 const Discount = require('../models/Discount')
 const Comment = require('../models/Comment')
+const fs = require('fs')
 
 exports.getProductStats = async (req, res) => {
 	try {
@@ -258,18 +259,83 @@ exports.patchProductImages = async (req, res) => {
 			for (let uImg of req.files) {
 				// add new entry
 				updatedImgs.push({
-					image: uImg.path,
+					image: uImg.path.replace(/\\/g, '/'),
 					imageType: req.body.imageType || 'gallery'
 				})
 			}
 			product.images = [].concat(product.images, updatedImgs)
 			await product.save()
 			// send list of new img filenames
-			res.status(200).send(updatedImgs.map((item) => item.image))
+			res.status(200).send(product.images)
 		} catch (error) {
 			res.status(400).send({ error: error.message })
 		}
 	} else {
 		res.status(400).send({ error: 'ProductID is invalid.' })
+	}
+}
+
+exports.patchProductBanner = async (req, res) => {
+	// Update product banner
+	if (req.params.productID) {
+		try {
+			if (!req.file) {
+				return res
+					.status(400)
+					.send({ error: 'Missing form data (image).' })
+			}
+			const product = await Product.findOne({ _id: req.params.productID })
+			if (!product) {
+				return res
+					.status(404)
+					.send({ error: 'Error updating product.' })
+			}
+			const newImgsList = []
+			product.images.forEach((item) => {
+				if (item.imageType == 'banner') {
+					// remove current banner
+					fs.unlinkSync(item.image) // remove
+				} else {
+					newImgsList.push(item)
+				}
+			})
+			newImgsList.push({
+				image: req.file.path.replace(/\\/g, '/'),
+				imageType: req.body.imageType || 'banner'
+			})
+			product.images = newImgsList.slice()
+			product.isFeatured = req.body.isFeatured
+			await product.save()
+			// send list of new img filenames
+			res.status(200).send(product.images)
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(400).send({ error: 'ProductID is invalid.' })
+	}
+}
+
+exports.deleteProductImage = async (req, res) => {
+	if (req.params.productID && req.params.imageID) {
+		try {
+			// Edit product images
+			const product = await Product.findOne({ _id: req.params.productID })
+			if (product) {
+				product.images = product.images.filter((item) => {
+					if (item._id != req.params.imageID) return true
+					fs.unlinkSync(item.image) // remove
+					return false
+				})
+				await product.save()
+				res.status(200).send()
+			} else {
+				res.status(204).send()
+			}
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(400).send({ error: 'Product or image ID is invalid.' })
 	}
 }

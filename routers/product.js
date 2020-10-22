@@ -31,6 +31,17 @@ router.patch(
 	upload.array('image'),
 	ProductsController.patchProductImages
 )
+router.patch(
+	'/banner/:productID',
+	auth,
+	upload.single('banner'),
+	ProductsController.patchProductBanner
+)
+router.delete(
+	'/images/:productID/:imageID',
+	auth,
+	ProductsController.deleteProductImage
+)
 
 // PUBLIC ROUTES
 router.get(
