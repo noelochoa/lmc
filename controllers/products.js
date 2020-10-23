@@ -294,7 +294,7 @@ exports.patchProductBanner = async (req, res) => {
 			product.images.forEach((item) => {
 				if (item.imageType == 'banner') {
 					// remove current banner
-					fs.unlinkSync(item.image) // remove
+					fs.unlink(item.image, function (err) {})
 				} else {
 					newImgsList.push(item)
 				}
@@ -324,7 +324,8 @@ exports.deleteProductImage = async (req, res) => {
 			if (product) {
 				product.images = product.images.filter((item) => {
 					if (item._id != req.params.imageID) return true
-					fs.unlinkSync(item.image) // remove
+					// remove
+					fs.unlink(item.image, function (err) {})
 					return false
 				})
 				await product.save()
