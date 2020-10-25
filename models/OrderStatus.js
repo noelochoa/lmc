@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const moment = require('moment')
 // const validator = require('validator')
 
 const statusSchema = mongoose.Schema({
@@ -14,12 +15,23 @@ const statusSchema = mongoose.Schema({
 	}
 })
 
-statusSchema.statics.getOrdersStats = async function () {
-	// Get Order statistics for this month
+statusSchema.statics.getOrdersStats = async function ({
+	year = '',
+	month = ''
+}) {
 	let ret = {}
-	const d = new Date()
-	const firstDayOfMonth = new Date(d.getFullYear(), d.getMonth(), 1)
-	const lastDayOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+	// Get Order statistics for this month or defined month
+	const base = moment().startOf('day')
+	let qyear = base.year(),
+		qmonth = base.month()
+
+	if (!isNaN(year) && year.length === 4) {
+		qyear = year
+	}
+	if (!isNaN(month) && month > 0 && month <= 12) {
+		qmonth = month - 1
+	}
+	const qdate = moment({ year: qyear, month: qmonth })
 
 	const stats = await OrderStatus.aggregate([
 		{
@@ -31,8 +43,8 @@ statusSchema.statics.getOrdersStats = async function () {
 						$match: {
 							$expr: { $eq: ['$$id', '$status'] },
 							target: {
-								$gte: firstDayOfMonth,
-								$lte: lastDayOfMonth
+								$gte: qdate.startOf('month').toDate(),
+								$lte: qdate.endOf('month').toDate()
 							}
 						}
 					}

@@ -257,7 +257,7 @@ basketSchema.statics.getBasketDetails = async function (searchParam) {
 							pipeline: [
 								{
 									$match: {
-										$expr: { $in: ['$$id', '$products'] },
+										$expr: { $eq: ['$$id', '$_id'] },
 										start: { $lte: new Date() },
 										end: { $gte: new Date() }
 									}

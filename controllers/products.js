@@ -20,7 +20,7 @@ exports.getProduct = async (req, res) => {
 			const product = await Product.findOne({
 				_id: req.params.productID
 			})
-			if (product && product.images.length > 0) {
+			if (product && product.images) {
 				product.images = product.images.map((item) => {
 					item.image = item.image.replace(/\\/g, '/')
 					return item
@@ -34,6 +34,7 @@ exports.getProduct = async (req, res) => {
 		res.status(400).send({ error: 'Product ID missing or invalid.' })
 	}
 }
+
 exports.getAllProducts = async (req, res) => {
 	// Dump all
 	try {
@@ -41,8 +42,11 @@ exports.getAllProducts = async (req, res) => {
 			req.params.category && req.params.category !== 'all'
 				? req.params.category
 				: '.*'
-		const products = await Product.getAllProductsByCategory(category)
-
+		const search = req.query.name ? req.query.name : '.*'
+		const products = await Product.getAllProductsByCategory(
+			category,
+			search
+		)
 		res.status(200).send({
 			products: products,
 			count: products.length

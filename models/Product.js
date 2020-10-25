@@ -227,7 +227,7 @@ productSchema.statics.addNewComment = async (productID, commentID) => {
 	return product
 }
 
-productSchema.statics.getAllProductsByCategory = async (category) => {
+productSchema.statics.getAllProductsByCategory = async (category, search) => {
 	// Get product details belonging to supplied category
 	const products = await Product.aggregate([
 		{
@@ -241,9 +241,34 @@ productSchema.statics.getAllProductsByCategory = async (category) => {
 		{ $unwind: '$category' },
 		{
 			$match: {
-				'category.name': {
-					$in: [new RegExp('^' + category + '$', 'i')]
-				}
+				$and: [
+					{
+						'category.name': {
+							$in: [new RegExp('^' + category + '$', 'i')]
+						}
+					},
+					{
+						name: {
+							$in: [new RegExp(search, 'i')]
+						}
+					}
+				]
+			}
+		},
+		{
+			$lookup: {
+				from: Discount.collection.name,
+				let: { id: '$_id' },
+				pipeline: [
+					{
+						$match: {
+							$expr: { $in: ['$$id', '$products'] },
+							start: { $lte: new Date() },
+							end: { $gte: new Date() }
+						}
+					}
+				],
+				as: 'discount'
 			}
 		},
 		{
@@ -252,6 +277,8 @@ productSchema.statics.getAllProductsByCategory = async (category) => {
 				name: 1,
 				seoname: 1,
 				basePrice: 1,
+				minOrderQuantity: 1,
+				options: 1,
 				category: '$category.name',
 				isActive: 1,
 				isFeatured: 1,
@@ -310,6 +337,8 @@ productSchema.statics.getProductDetailsbyCategory = async (category) => {
 				name: 1,
 				seoname: 1,
 				basePrice: 1,
+				options: 1,
+				minOrderQuantity: 1,
 				category: 1,
 				isActive: 1,
 				images: 1,
@@ -378,6 +407,66 @@ productSchema.statics.getProductDetails = async (productName) => {
 				images: 1,
 				variants: 1,
 				discount: 1,
+				comments: 1
+			}
+		}
+	]).option({ hint: { seoname: 1 } })
+
+	return product
+}
+
+productSchema.statics.getProductDetailsById = async (IDs) => {
+	// Get product details of using slug
+	const product = await Product.aggregate([
+		{
+			$match: {
+				$expr: { $in: ['$_id', IDs] }
+			}
+		},
+		{
+			$lookup: {
+				from: Category.collection.name,
+				localField: 'category',
+				foreignField: '_id',
+				as: 'category'
+			}
+		},
+		{ $unwind: '$category' },
+		{
+			$lookup: {
+				from: Discount.collection.name,
+				let: { id: '$_id' },
+				pipeline: [
+					{
+						$match: {
+							$expr: { $in: ['$$id', '$products'] },
+							start: { $lte: new Date() },
+							end: { $gte: new Date() }
+						}
+					}
+				],
+				as: 'discount'
+			}
+		},
+		{
+			$lookup: {
+				from: Comment.collection.name,
+				localField: 'comments',
+				foreignField: '_id',
+				as: 'comments'
+			}
+		},
+		{
+			$project: {
+				_id: -1,
+				seoname: 1,
+				basePrice: 1,
+				category: 1,
+				isActive: 1,
+				images: 1,
+				variants: 1,
+				discount: 1,
+				options: 1,
 				comments: 1
 			}
 		}
