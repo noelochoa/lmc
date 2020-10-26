@@ -40,7 +40,18 @@ const orderItemSchema = mongoose.Schema(
 				}
 			}
 		},
+		discount: {
+			type: Number,
+			required: true,
+			min: 0,
+			max: 99,
+			default: 0
+		},
 		price: {
+			type: Number,
+			required: true
+		},
+		finalPrice: {
 			type: Number,
 			required: true
 		},
@@ -215,7 +226,7 @@ orderSchema.statics.getOrders = async function ({ year, month, status }) {
 	const qdate = moment({ year: qyear, month: qmonth })
 
 	// status query
-	if (!status) {
+	if (!status || status == 'all') {
 		status = '.*'
 	}
 
@@ -263,6 +274,7 @@ orderSchema.statics.getOrders = async function ({ year, month, status }) {
 				},
 				target: 1,
 				total: 1,
+				deliveryType: 1,
 				customer: {
 					$map: {
 						input: '$customer',
@@ -355,7 +367,8 @@ orderSchema.statics.getOrderDetails = async function (searchParam) {
 				products: { $push: '$products' }
 			}
 		}
-	]).option({ hint: { 'products.product': 1 } })
+		// ]).option({ hint: { 'products.product': 1 } })
+	])
 
 	return order
 }

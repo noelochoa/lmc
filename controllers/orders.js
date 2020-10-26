@@ -3,13 +3,21 @@ const Order = require('../models/Order')
 const OrderStatus = require('../models/OrderStatus')
 const Customer = require('../models/Customer')
 const Product = require('../models/Product')
-const { Mongoose } = require('mongoose')
-const { param } = require('express-validator')
+// const { check } = require('express-validator')
 
 exports.getOrderStats = async (req, res) => {
 	try {
 		let params = { ...req.query }
 		const stats = await OrderStatus.getOrdersStats(params)
+		res.status(200).send(stats)
+	} catch (error) {
+		res.status(400).send({ error: error.message })
+	}
+}
+
+exports.getOrderStatuses = async (req, res) => {
+	try {
+		const stats = await OrderStatus.find()
 		res.status(200).send(stats)
 	} catch (error) {
 		res.status(400).send({ error: error.message })
@@ -23,6 +31,23 @@ exports.getOrders = async (req, res) => {
 		res.status(200).send(orders)
 	} catch (error) {
 		res.status(400).send({ error: error.message })
+	}
+}
+
+exports.getOrder = async (req, res) => {
+	// Get order details
+	if (req.params.orderID) {
+		try {
+			const order = await Order.findOne({
+				_id: req.params.orderID
+			}).populate('products.product', 'id name seoname images')
+
+			res.status(200).send(order)
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(400).send({ error: 'Order ID missing or invalid.' })
 	}
 }
 
@@ -73,6 +98,7 @@ exports.placeOrder = async (req, res) => {
 								})
 					  )
 					: 0
+			// Find option price
 			paramProduct.options.forEach((paramOption) => {
 				const optionGrp = selProduct.options.find((selOpt) => {
 					return selOpt.attribute == paramOption._option
@@ -82,14 +108,18 @@ exports.placeOrder = async (req, res) => {
 				})
 				sub += paramProduct.quantity * choice.price
 			})
-
+			// Update per item prices
+			paramProduct.price = sub
+			paramProduct.discount = maxDiscount
+			paramProduct.finalPrice = parseFloat(
+				sub - (sub * maxDiscount) / 100
+			).toFixed(0)
 			// Update total price
-			finalPrice += sub - (sub * maxDiscount) / 100
+			finalPrice += parseInt(paramProduct.finalPrice)
 		})
 		// Set final price to insert
-		params.total = finalPrice.toFixed(0)
-
-		// Create Order object
+		params.total = finalPrice
+		// Create Order object and save
 		const order = new Order(params)
 		await order.save()
 		res.status(200).send(order)
