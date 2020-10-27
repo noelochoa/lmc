@@ -71,6 +71,10 @@ const orderSchema = mongoose.Schema({
 		ref: 'OrderStatus',
 		required: true
 	},
+	replacedBy: {
+		type: mongoose.Types.ObjectId,
+		ref: 'Order'
+	},
 	deliveryType: {
 		type: String,
 		required: true,

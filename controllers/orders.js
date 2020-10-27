@@ -127,3 +127,28 @@ exports.placeOrder = async (req, res) => {
 		res.status(400).send({ error: error.message })
 	}
 }
+
+exports.patchOrder = async (req, res) => {
+	// Edit Order details
+	if (req.params.orderID) {
+		try {
+			const updateProps = {}
+			for (let op of req.body) {
+				updateProps[op.property] = op.value
+			}
+			const result = await Order.updateOne(
+				{ _id: req.params.orderID },
+				{ $set: updateProps },
+				{ runValidators: true }
+			)
+			if (!result || result.n == 0) {
+				return res.status(404).send({ error: 'Error updating order.' })
+			}
+			res.status(200).send({ message: 'Successfully updated.' })
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(400).send({ error: 'Order ID is invalid.' })
+	}
+}
