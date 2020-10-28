@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const AutoIncrement = require('mongoose-sequence')(mongoose)
 const moment = require('moment')
 const OrderStatus = require('../models/OrderStatus')
 const Product = require('../models/Product')
@@ -64,12 +65,24 @@ const orderSchema = mongoose.Schema({
 	customer: {
 		type: mongoose.Types.ObjectId,
 		ref: 'Customer',
-		required: true
+		required: true,
+		validate: {
+			validator: (val) => {
+				return Customer.exists({ _id: val })
+			},
+			message: '{VALUE} is invalid or does not exist'
+		}
 	},
 	status: {
 		type: mongoose.Types.ObjectId,
 		ref: 'OrderStatus',
-		required: true
+		required: true,
+		validate: {
+			validator: (val) => {
+				return OrderStatus.exists({ _id: val })
+			},
+			message: '{VALUE} is invalid or does not exist'
+		}
 	},
 	replacedBy: {
 		type: mongoose.Types.ObjectId,
@@ -104,7 +117,12 @@ const orderSchema = mongoose.Schema({
 		required: true,
 		default: Date.now
 	},
-	products: [orderItemSchema]
+	products: [orderItemSchema],
+	memo: {
+		type: String,
+		trim: true,
+		max: 1024
+	}
 })
 
 orderSchema.pre('save', async function (next) {
@@ -266,6 +284,7 @@ orderSchema.statics.getOrders = async function ({ year, month, status }) {
 		{
 			$project: {
 				id: '$_id',
+				ordernum: 1,
 				status: {
 					$map: {
 						input: '$status',
@@ -377,6 +396,7 @@ orderSchema.statics.getOrderDetails = async function (searchParam) {
 	return order
 }
 
+orderSchema.plugin(AutoIncrement, { inc_field: 'ordernum' })
 const Order = mongoose.model('Order', orderSchema, 'Orders')
 
 module.exports = Order

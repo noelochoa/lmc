@@ -78,24 +78,21 @@ exports.placeOrder = async (req, res) => {
 			const selProduct = products.find((item) => {
 				return item._id == paramProduct.product
 			})
+			const discounts = selProduct.discount.filter((item) => {
+				return (
+					item.target == customer.accountType || item.target == 'all'
+				)
+			})
 			// price per product
 			let sub = selProduct.basePrice * paramProduct.quantity
-
 			// Discount found for each item
 			const maxDiscount =
-				selProduct.discount && selProduct.discount.length > 0
+				discounts && discounts.length > 0
 					? Math.max.apply(
 							Math,
-							selProduct.discount
-								.filter((item) => {
-									return (
-										item.target == customer.accountType ||
-										item.target == 'all'
-									)
-								})
-								.map(function (o) {
-									return o.percent
-								})
+							discounts.map(function (o) {
+								return o.percent
+							})
 					  )
 					: 0
 			// Find option price
