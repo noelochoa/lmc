@@ -1,11 +1,15 @@
 const mongoose = require('mongoose')
 const AutoIncrement = require('mongoose-sequence')(mongoose)
 const moment = require('moment')
+const sgmail = require('@sendgrid/mail')
+const mailhelper = require('../helpers/mailhelper')
+
 const OrderStatus = require('../models/OrderStatus')
 const Product = require('../models/Product')
 const Category = require('../models/Category')
 const Discount = require('../models/Discount')
 const Customer = require('../models/Customer')
+const { getMaxListeners } = require('../models/OrderStatus')
 // const TrustedComms = require('twilio/lib/rest/preview/TrustedComms')
 // const validator = require('validator')
 
@@ -85,8 +89,13 @@ const orderSchema = mongoose.Schema({
 		}
 	},
 	replacedBy: {
-		type: mongoose.Types.ObjectId,
-		ref: 'Order'
+		ordernum: {
+			type: Number
+		},
+		reference: {
+			type: mongoose.Types.ObjectId,
+			ref: 'Order'
+		}
 	},
 	deliveryType: {
 		type: String,
@@ -156,6 +165,8 @@ orderSchema.pre('save', async function (next) {
 			if (newArray.has(propertyValue) && item.quantity > 0) {
 				const existing = newArray.get(propertyValue)
 				item.quantity += existing.quantity
+				item.price += existing.price
+				item.finalPrice += existing.finalPrice
 
 				newArray.set(propertyValue, item)
 			} else {
@@ -165,6 +176,32 @@ orderSchema.pre('save', async function (next) {
 	}
 	order.products = Array.from(newArray.values())
 	next()
+})
+
+orderSchema.pre('updateOne', async function (next) {
+	const q_id = this.getQuery()._id
+	const updateData = this.getUpdate().$set
+	try {
+		// Check if status has changed
+		const [current, newStatus] = await Promise.all([
+			Order.findOne({ _id: q_id }),
+			OrderStatus.findOne({ _id: updateData.status })
+		])
+		if (current.status.toString() != newStatus._id.toString()) {
+			// SEND NOTIFICATION (TODO)
+			// sgmail.setApiKey(process.env.SENDGRID_API_KEY)
+			// const orderNotifOptions = mailhelper.createOrderUpdateMail(
+			// 	'noelochoa22@gmail.com',
+			// 	'Noel',
+			// 	'OR20-22222',
+			// 	newStatus.status
+			// )
+			// await sgmail.send(orderNotifOptions)
+		}
+		next()
+	} catch (err) {
+		throw 'Error occurred while updating order details'
+	}
 })
 
 /*
@@ -362,7 +399,7 @@ orderSchema.statics.getOrderDetails = async function (searchParam) {
 									}
 								}
 							],
-							as: 'discount'
+							as: 'discounts'
 						}
 					},
 					{
@@ -374,26 +411,35 @@ orderSchema.statics.getOrderDetails = async function (searchParam) {
 							category: 1,
 							basePrice: 1,
 							images: 1,
-							discount: 1
+							discounts: 1
 						}
 					}
 				],
 				as: 'products.product'
 			}
 		},
+		{ $unwind: '$products.product' },
 		{
 			$group: {
 				_id: '$_id',
+				status: { $first: '$status' },
+				ordernum: { $first: '$ordernum' },
+				replacedBy: { $first: '$replacedBy' },
+				target: { $first: '$target' },
+				deliveryType: { $first: '$deliveryType' },
+				shippingAddress: { $first: '$shippingAddress' },
+				memo: { $first: '$memo' },
+				total: { $first: '$total' },
 				created: { $first: '$created' },
 				modified: { $first: '$modified' },
 				customer: { $first: '$customer' },
 				products: { $push: '$products' }
 			}
 		}
-		// ]).option({ hint: { 'products.product': 1 } })
-	])
+	]).option({ hint: { 'products.product': 1 } })
+	// ])
 
-	return order
+	return order[0]
 }
 
 orderSchema.plugin(AutoIncrement, { inc_field: 'ordernum' })

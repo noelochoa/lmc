@@ -3,6 +3,10 @@ const mailhelper = {
 		return text.length > length ? text.substring(0, length) + '...' : text
 	},
 
+	capitalizeFirstLetter: (string) => {
+		return string.charAt(0).toUpperCase() + string.slice(1)
+	},
+
 	// Verification mail content
 	createVerificationMail: (email, firstname, token) => {
 		return {
@@ -65,6 +69,43 @@ const mailhelper = {
 				'<p><i>This code will expire in 30 minutes. You may request a new code in the login/signup page.<br/>' +
 				'This is an automated message for verifying that you indeed requested to reset your password. <br/>' +
 				'Kindly ignore this email otherwise, or if you are not the intended target.</i><p>' +
+				'Thanks, <br/>' +
+				'LMC Web Support Team' +
+				'</html>'
+		}
+	},
+
+	// Password Reset Mail Contents
+	createOrderUpdateMail: (email, firstname, ordernum, status) => {
+		return {
+			from: 'LMC Web Support <' + process.env.SENDGRID_EMAIL_FROM + '>',
+			to: email,
+			subject: '[LMC] Order Status Update',
+			text:
+				'Hello ' +
+				mailhelper.trimEllipse(firstname, 32) +
+				',\n\n' +
+				'Thank you for your business!\n' +
+				'Your order #' +
+				ordernum +
+				'has been processed ' +
+				' and is now ' +
+				mailhelper.capitalizeFirstLetter(status) +
+				'.\n\n' +
+				'Thanks,\n' +
+				'LMC Web Support Team\n',
+			html:
+				'<html>' +
+				'Hello ' +
+				mailhelper.trimEllipse(firstname, 32) +
+				',<br/>' +
+				'Thank you for your business!<br/>' +
+				'Your order #' +
+				ordernum +
+				'has been processed ' +
+				' and is now ' +
+				mailhelper.capitalizeFirstLetter(status) +
+				'.<br/><br/>' +
 				'Thanks, <br/>' +
 				'LMC Web Support Team' +
 				'</html>'

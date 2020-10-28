@@ -10,5 +10,6 @@ router.get('/cms', auth, OrdersController.getOrders)
 router.get('/cms/:orderID', auth, OrdersController.getOrder)
 router.post('/cms', auth, OrdersController.placeOrder)
 router.patch('/cms/:orderID', auth, OrdersController.patchOrder)
+router.patch('/cms/replace/:orderID', auth, OrdersController.replaceOrder)
 
 module.exports = router
