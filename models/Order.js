@@ -9,9 +9,23 @@ const Product = require('../models/Product')
 const Category = require('../models/Category')
 const Discount = require('../models/Discount')
 const Customer = require('../models/Customer')
-const { getMaxListeners } = require('../models/OrderStatus')
 // const TrustedComms = require('twilio/lib/rest/preview/TrustedComms')
 // const validator = require('validator')
+
+const zeroPad = function (num, numZeros) {
+	var n = Math.abs(num)
+	if (isNaN(num)) n = 0
+	var zeros = Math.max(0, numZeros - Math.floor(n).toString().length)
+	var zeroString = Math.pow(10, zeros).toString().substr(1)
+	if (num < 0) {
+		zeroString = '-' + zeroString
+	}
+	return zeroString + n
+}
+
+const buildOrderNum = function (yy, num) {
+	return 'OR' + yy + '-' + zeroPad(num, 6)
+}
 
 const optionsSchema = mongoose.Schema(
 	{
@@ -184,23 +198,27 @@ orderSchema.pre('updateOne', async function (next) {
 	try {
 		// Check if status has changed
 		const [current, newStatus] = await Promise.all([
-			Order.findOne({ _id: q_id }),
+			Order.findOne({ _id: q_id }).populate(
+				'customer',
+				'_id firstname email'
+			),
 			OrderStatus.findOne({ _id: updateData.status })
 		])
 		if (current.status.toString() != newStatus._id.toString()) {
-			// SEND NOTIFICATION (TODO)
-			// sgmail.setApiKey(process.env.SENDGRID_API_KEY)
-			// const orderNotifOptions = mailhelper.createOrderUpdateMail(
-			// 	'noelochoa22@gmail.com',
-			// 	'Noel',
-			// 	'OR20-22222',
-			// 	newStatus.status
-			// )
-			// await sgmail.send(orderNotifOptions)
+			// Send notification to Customer
+			/* TODO
+			sgmail.setApiKey(process.env.SENDGRID_API_KEY)
+			const orderNotifOptions = mailhelper.createOrderUpdateMail(
+				current.customer.email,
+				current.customer.firstname,
+				buildOrderNum(current.created.getYear(), current.ordernum),
+				newStatus.status
+			)
+			sgmail.send(orderNotifOptions)*/
 		}
 		next()
 	} catch (err) {
-		throw 'Error occurred while updating order details'
+		next('Error occurred while updating order status.')
 	}
 })
 

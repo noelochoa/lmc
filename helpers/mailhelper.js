@@ -85,13 +85,16 @@ const mailhelper = {
 				'Hello ' +
 				mailhelper.trimEllipse(firstname, 32) +
 				',\n\n' +
-				'Thank you for your business!\n' +
+				'Thank you for your business with us!\n' +
 				'Your order #' +
 				ordernum +
-				'has been processed ' +
-				' and is now ' +
+				' has been updated ' +
+				' and is now: ' +
 				mailhelper.capitalizeFirstLetter(status) +
 				'.\n\n' +
+				'Please visit our website for more details regarding your order.\n' +
+				'This is an automated notification regarding your order/s. \n' +
+				'Please do not reply to this email.. \n\n' +
 				'Thanks,\n' +
 				'LMC Web Support Team\n',
 			html:
@@ -99,13 +102,17 @@ const mailhelper = {
 				'Hello ' +
 				mailhelper.trimEllipse(firstname, 32) +
 				',<br/>' +
-				'Thank you for your business!<br/>' +
+				'Thank you for your business with us!<br/>' +
 				'Your order #' +
 				ordernum +
-				'has been processed ' +
-				' and is now ' +
+				' has been updated ' +
+				' and is now: ' +
+				'<h2>' +
 				mailhelper.capitalizeFirstLetter(status) +
-				'.<br/><br/>' +
+				'</h2>' +
+				'<p>Please visit our website for more details regarding your order.</p>' +
+				'<p><i>This is an automated notification sent your order/s. <br/>' +
+				'Please do not reply to this email.</i><p>' +
 				'Thanks, <br/>' +
 				'LMC Web Support Team' +
 				'</html>'

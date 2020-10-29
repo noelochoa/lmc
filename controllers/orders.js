@@ -34,6 +34,26 @@ exports.getOrders = async (req, res) => {
 	}
 }
 
+exports.findSimilarOrders = async (req, res) => {
+	if (req.params.orderID) {
+		try {
+			let params = { ...req.body }
+			const orders = await Order.find(
+				{
+					_id: { $ne: req.params.orderID },
+					$text: { $search: '55555' }
+				},
+				{ score: { $meta: 'textScore' } }
+			).sort({ score: { $meta: 'textScore' } })
+			res.status(200).send(orders)
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(400).send({ error: 'Order ID missing or invalid.' })
+	}
+}
+
 exports.getOrder = async (req, res) => {
 	// Get order details
 	if (req.params.orderID) {
