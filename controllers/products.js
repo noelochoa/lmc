@@ -35,6 +35,21 @@ exports.getProduct = async (req, res) => {
 	}
 }
 
+exports.getFeaturedProducts = async (req, res) => {
+	try {
+		// Find Featured Products
+		const products = await Product.find({
+			isActive: true,
+			isFeatured: true
+		}).sort({ modified: -1 })
+		res.status(200).send({
+			products
+		})
+	} catch (error) {
+		res.status(400).send({ error: error.message })
+	}
+}
+
 exports.getAllProducts = async (req, res) => {
 	// Dump all
 	try {
@@ -51,6 +66,22 @@ exports.getAllProducts = async (req, res) => {
 			products: products,
 			count: products.length
 		})
+	} catch (error) {
+		res.status(400).send({ error: error.message })
+	}
+}
+
+exports.getNewItems = async (req, res) => {
+	// Get active products by category
+	try {
+		let limit = 4
+		// All active products for category
+		const products = await Product.getProductDetailsbyCategory('.*', limit)
+
+		if (!products || products.length == 0) {
+			return res.status(404).send({ error: 'Products not found.' })
+		}
+		res.status(200).send({ products: products, count: products.length })
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}

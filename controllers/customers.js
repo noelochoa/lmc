@@ -424,7 +424,7 @@ exports.patchCustomer = async (req, res) => {
 			for (let op of req.body) {
 				updateProps[op.property] = op.value
 			}
-			console.log(updateProps)
+			// console.log(updateProps)
 			const result = await Customer.updateOne(
 				{ _id: req.params.accountID },
 				{ $set: updateProps },

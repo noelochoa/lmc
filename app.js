@@ -1,6 +1,7 @@
 const express = require('express')
 // const compression = require("compression")
 
+const searchRouter = require('./routers/search')
 const psaRouter = require('./routers/announcement')
 const productRouter = require('./routers/product')
 const discountRouter = require('./routers/discount')
@@ -38,12 +39,13 @@ app.use(function (req, res, next) {
 	// Pass to next layer of middleware
 	next()
 })
-// gzip
+// gzip ( handled by NGINX )
 // app.use(compression({ threshold: 0 }));
 app.use('/images', express.static('images'))
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 
+app.use('/search', searchRouter)
 app.use('/psa', psaRouter)
 app.use('/products', productRouter)
 app.use('/discounts', discountRouter)

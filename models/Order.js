@@ -9,7 +9,6 @@ const Product = require('../models/Product')
 const Category = require('../models/Category')
 const Discount = require('../models/Discount')
 const Customer = require('../models/Customer')
-// const TrustedComms = require('twilio/lib/rest/preview/TrustedComms')
 // const validator = require('validator')
 
 const zeroPad = function (num, numZeros) {
@@ -23,8 +22,13 @@ const zeroPad = function (num, numZeros) {
 	return zeroString + n
 }
 
-const buildOrderNum = function (yy, num) {
-	return 'OR' + yy + '-' + zeroPad(num, 6)
+const buildOrderNum = function (dt, num) {
+	return (
+		'OR' +
+		(dt ? dt.getYear() : new Date().getYear()) +
+		'-' +
+		zeroPad(num, 6)
+	)
 }
 
 const optionsSchema = mongoose.Schema(
@@ -288,6 +292,91 @@ orderSchema.statics.getOrderStats = async function () {
 	return stats[0]
 }*/
 
+orderSchema.statics.findOrders = async function (search) {
+	// Find orders with matching search param
+	if (!search) return []
+	const orders = await Order.aggregate([
+		{
+			$lookup: {
+				from: OrderStatus.collection.name,
+				localField: 'status',
+				foreignField: '_id',
+				as: 'status'
+			}
+		},
+		{ $unwind: '$status' },
+		{
+			$lookup: {
+				from: Customer.collection.name,
+				localField: 'customer',
+				foreignField: '_id',
+				as: 'customer'
+			}
+		},
+		{ $unwind: '$customer' },
+		{ $unwind: '$products' },
+		{
+			$lookup: {
+				from: Product.collection.name,
+				let: { productID: '$products.product' },
+				pipeline: [
+					{
+						$match: {
+							$expr: { $eq: ['$_id', '$$productID'] }
+						}
+					},
+					{
+						$project: {
+							_id: 1,
+							isActive: 1,
+							name: 1,
+							seoname: 1,
+							category: 1
+						}
+					}
+				],
+				as: 'products.product'
+			}
+		},
+		{ $unwind: '$products.product' },
+		{
+			$match: {
+				$or: [
+					{ 'products.product.name': { $in: [search] } },
+					{
+						'customer.firstname': { $in: [search] }
+					},
+					{ 'customer.lastname': { $in: [search] } },
+					{ 'status.status': { $in: [search] } }
+				]
+			}
+		},
+		{
+			$group: {
+				_id: '$_id',
+				status: { $first: '$status' },
+				ordernum: { $first: '$ordernum' },
+				target: { $first: '$target' },
+				memo: { $first: '$memo' },
+				total: { $first: '$total' },
+				created: { $first: '$created' },
+				customer: { $first: '$customer' },
+				products: { $push: '$products' }
+			}
+		},
+		{
+			$sort: { modified: -1 }
+		},
+		{
+			$limit: 5
+		}
+	])
+	orders.forEach((item) => {
+		item.orderRef = buildOrderNum(item.created, item.ordernum)
+	})
+	return orders
+}
+
 orderSchema.statics.getOrders = async function ({ year, month, status }) {
 	// get whole month
 	const base = moment().startOf('day')
@@ -341,33 +430,45 @@ orderSchema.statics.getOrders = async function ({ year, month, status }) {
 				id: '$_id',
 				ordernum: 1,
 				status: {
-					$map: {
-						input: '$status',
-						as: 'status',
-						in: {
-							id: '$$status._id',
-							status: '$$status.status'
-						}
-					}
+					$arrayElemAt: [
+						{
+							$map: {
+								input: '$status',
+								as: 'status',
+								in: {
+									id: '$$status._id',
+									status: '$$status.status'
+								}
+							}
+						},
+						0
+					]
 				},
 				target: 1,
 				total: 1,
 				deliveryType: 1,
 				customer: {
-					$map: {
-						input: '$customer',
-						as: 'customer',
-						in: {
-							id: '$$customer._id',
-							fname: '$$customer.firstname',
-							lname: '$$customer.lastname'
-						}
-					}
+					$arrayElemAt: [
+						{
+							$map: {
+								input: '$customer',
+								as: 'customer',
+								in: {
+									id: '$$customer._id',
+									firstname: '$$customer.firstname',
+									lastname: '$$customer.lastname'
+								}
+							}
+						},
+						0
+					]
 				}
 			}
 		}
 	])
-
+	orders.forEach((item) => {
+		item.orderRef = buildOrderNum(item.created, item.ordernum)
+	})
 	return orders
 }
 
@@ -456,8 +557,157 @@ orderSchema.statics.getOrderDetails = async function (searchParam) {
 		}
 	]).option({ hint: { 'products.product': 1 } })
 	// ])
-
+	order.forEach((item) => {
+		item.orderRef = buildOrderNum(item.created, item.ordernum)
+	})
 	return order[0]
+}
+
+/*
+orderSchema.statics.findSimilarStatus = async function (oID, status) {
+	const items = await Order.find({
+		_id: { $ne: oID },
+		status: status
+	})
+		.populate('customer', 'name firstname lastname')
+		.populate('status')
+		.sort({ target: -1 })
+		.limit(5)
+		.lean()
+	items.forEach((item) => {
+		item.orderRef = buildOrderNum(item.created, item.ordernum)
+	})
+	return items
+}
+
+orderSchema.statics.findSameCustomer = async function (oID, customer) {
+	const items = await Order.find({
+		_id: { $ne: oID },
+		customer: customer
+	})
+		.populate('customer', 'name firstname lastname')
+		.populate('status')
+		.sort({ target: -1 })
+		.limit(5)
+		.lean()
+	items.forEach((item) => {
+		item.orderRef = buildOrderNum(item.created, item.ordernum)
+	})
+	return items
+}*/
+
+orderSchema.statics.findNearbyDates = async function (oID, target) {
+	const items = await Order.aggregate([
+		{ $match: { _id: { $ne: oID } } },
+		{
+			$lookup: {
+				from: OrderStatus.collection.name,
+				localField: 'status',
+				foreignField: '_id',
+				as: 'status'
+			}
+		},
+		{
+			$lookup: {
+				from: Customer.collection.name,
+				localField: 'customer',
+				foreignField: '_id',
+				as: 'customer'
+			}
+		},
+		{ $match: { 'status.step': { $in: [1, 2] } } }, // accepted / preparing / finalizing
+		{
+			$project: {
+				id: '$_id',
+				ordernum: 1,
+				status: {
+					$arrayElemAt: [
+						{
+							$map: {
+								input: '$status',
+								as: 'status',
+								in: {
+									id: '$$status._id',
+									status: '$$status.status'
+								}
+							}
+						},
+						0
+					]
+				},
+				target: 1,
+				total: 1,
+				deliveryType: 1,
+				customer: {
+					$arrayElemAt: [
+						{
+							$map: {
+								input: '$customer',
+								as: 'customer',
+								in: {
+									id: '$$customer._id',
+									firstname: '$$customer.firstname',
+									lastname: '$$customer.lastname'
+								}
+							}
+						},
+						0
+					]
+				},
+				difference: {
+					$abs: {
+						$subtract: [moment(target).toDate(), '$target']
+					}
+				}
+			}
+		},
+		{ $match: { difference: { $lte: 2 * 86400 * 1000 } } }, // 3 days (milliseconds)
+		{
+			$sort: { difference: 1 }
+		},
+		{
+			$limit: 5
+		}
+	])
+	items.forEach((item) => {
+		item.orderRef = buildOrderNum(item.created, item.ordernum)
+	})
+	return items
+}
+
+orderSchema.statics.findSimilarProducts = async function (oID, products) {
+	const items = await Order.find({
+		_id: { $ne: oID },
+		'products.product': { $in: products }
+	})
+		.populate('customer', 'name firstname lastname')
+		.populate('status', 'status')
+		.sort({ target: -1 })
+		.limit(5)
+		.lean()
+	items.forEach((item) => {
+		item.orderRef = buildOrderNum(item.created, item.ordernum)
+	})
+	return items
+}
+
+orderSchema.statics.findSimilarOptions = async function (oID, options) {
+	const items = await Order.find(
+		{
+			_id: { $ne: oID },
+			$text: { $search: options }
+		},
+		{ score: { $meta: 'textScore' } }
+	)
+		.populate('customer', 'name firstname lastname')
+		.populate('status', 'status')
+		.sort({ score: { $meta: 'textScore' } })
+		.limit(5)
+		.lean()
+	items.forEach((item) => {
+		item.orderRef = buildOrderNum(item.created, item.ordernum)
+	})
+	return items
 }
 
 orderSchema.plugin(AutoIncrement, { inc_field: 'ordernum' })

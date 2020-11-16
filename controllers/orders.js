@@ -37,14 +37,63 @@ exports.getOrders = async (req, res) => {
 exports.findSimilarOrders = async (req, res) => {
 	if (req.params.orderID) {
 		try {
+			let orders = [],
+				unique = new Map()
+			queries = []
 			let params = { ...req.body }
-			const orders = await Order.find(
-				{
-					_id: { $ne: req.params.orderID },
-					$text: { $search: '55555' }
-				},
-				{ score: { $meta: 'textScore' } }
-			).sort({ score: { $meta: 'textScore' } })
+			/*
+			if (params.status) {
+				// Find similar status
+				queries.push(
+					Order.findSimilarStatus(req.params.orderID, params.status)
+				)
+			}
+			if (params.customer) {
+				// Find similar customer
+				queries.push(
+					Order.findSameCustomer(req.params.orderID, params.customer)
+				)
+			}*/
+			if (params.target) {
+				// Find similar target delivery date
+				queries.push(
+					Order.findNearbyDates(req.params.orderID, params.target)
+				)
+			}
+			if (params.options) {
+				// Find similar options
+				queries.push(
+					Order.findSimilarOptions(req.params.orderID, params.options)
+				)
+			}
+			if (params.products) {
+				// Find similar products
+				queries.push(
+					Order.findSimilarProducts(
+						req.params.orderID,
+						params.products.map((pid) =>
+							mongoose.Types.ObjectId(pid)
+						)
+					)
+				)
+			}
+			const results = await Promise.all(queries)
+			results.forEach((resGrp, index) => {
+				resGrp.forEach((order) => {
+					order.similarity = [
+						// 'Similar Status',
+						// 'Same Customer',
+						'Nearby Target date',
+						'Similar Options',
+						'Similar Products'
+					][index % 5]
+					if (!unique.has(order._id)) {
+						orders.push(order)
+					} else {
+						unique.set(order._id, true)
+					}
+				})
+			})
 			res.status(200).send(orders)
 		} catch (error) {
 			res.status(400).send({ error: error.message })

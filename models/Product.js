@@ -117,6 +117,11 @@ const productSchema = mongoose.Schema(
 			required: true,
 			default: Date.now
 		},
+		modified: {
+			type: Date,
+			required: true,
+			default: Date.now
+		},
 		images: [
 			{
 				image: {
@@ -180,6 +185,7 @@ productSchema.pre('updateOne', async function (next) {
 	if (updateData.name) {
 		this.getUpdate().$set.seoname = getSlug(updateData.name)
 	}
+	updateDate.modified = new Date()
 	next()
 })
 
@@ -295,7 +301,10 @@ productSchema.statics.getAllProductsByCategory = async (category, search) => {
 	return products
 }
 
-productSchema.statics.getProductDetailsbyCategory = async (category) => {
+productSchema.statics.getProductDetailsbyCategory = async (
+	category,
+	limit = 100
+) => {
 	// Get product details belonging to supplied category
 	const products = await Product.aggregate([
 		{
@@ -343,14 +352,13 @@ productSchema.statics.getProductDetailsbyCategory = async (category) => {
 				isActive: 1,
 				images: 1,
 				discount: 1,
+				created: 1,
 				sold: 1
 			}
-		}
-	])
-		.sort({
-			created: -1
-		})
-		.option({ hint: { isActive: 1 } })
+		},
+		{ $limit: limit },
+		{ $sort: { created: -1 } }
+	]).option({ hint: { isActive: 1 } })
 
 	return products
 }

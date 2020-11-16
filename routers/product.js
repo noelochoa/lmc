@@ -51,6 +51,8 @@ router.get(
 )
 router.get('/', ProductsController.getActiveProducts)
 router.get('/all', ProductsController.getActiveProducts)
+router.get('/new', ProductsController.getNewItems)
+router.get('/featured', ProductsController.getFeaturedProducts)
 router.get('/stats', ProductsController.getProductStats)
 router.get(
 	'/:category',
