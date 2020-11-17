@@ -185,7 +185,7 @@ productSchema.pre('updateOne', async function (next) {
 	if (updateData.name) {
 		this.getUpdate().$set.seoname = getSlug(updateData.name)
 	}
-	updateDate.modified = new Date()
+	updateData.modified = new Date()
 	next()
 })
 
@@ -356,8 +356,8 @@ productSchema.statics.getProductDetailsbyCategory = async (
 				sold: 1
 			}
 		},
-		{ $limit: limit },
-		{ $sort: { created: -1 } }
+		{ $sort: { created: -1 } },
+		{ $limit: limit }
 	]).option({ hint: { isActive: 1 } })
 
 	return products

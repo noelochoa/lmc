@@ -1,6 +1,16 @@
 const Announcement = require('../models/Announcement')
 const mongoose = require('mongoose')
 
+exports.getPSA = async (req, res) => {
+	try {
+		// Get today's psa
+		const psa = await Announcement.getAnnouncement(null)
+		res.status(200).send(psa)
+	} catch (error) {
+		res.status(400).send({ error: error.message })
+	}
+}
+
 exports.getAllAnnouncements = async (req, res) => {
 	// Get all announcements
 	try {

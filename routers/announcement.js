@@ -4,6 +4,7 @@ const router = express.Router()
 const AnnouncementsController = require('../controllers/announcements')
 const auth = require('../middleware/auth')
 
+router.get('/', AnnouncementsController.getPSA)
 router.get('/all', auth, AnnouncementsController.getAllAnnouncements)
 router.get('/:psaID', AnnouncementsController.getAnnouncement)
 router.post('/', auth, AnnouncementsController.createAnnouncement)
