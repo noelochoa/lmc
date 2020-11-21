@@ -2,7 +2,74 @@ const Product = require('../models/Product')
 const Category = require('../models/Category')
 const Discount = require('../models/Discount')
 const Comment = require('../models/Comment')
+const mongoose = require('mongoose')
 const fs = require('fs')
+
+const sortingFields = {
+	'best-selling': { sold: -1, _id: 1 },
+	'title-asc': { name: 1, _id: 1 },
+	'title-desc': { name: -1, _id: 1 },
+	'date-desc': { created: -1, _id: 1 },
+	'date-asc': { created: 1, _id: 1 },
+	'price-desc': { basePrice: -1, _id: 1 },
+	'price-asc': { basePrice: 1, _id: 1 }
+}
+
+function buildPageQry(target, last, id) {
+	let match1 = {}
+	let match2 = {}
+
+	switch (target) {
+		case 'best-selling':
+			match1 = { sold: { $gt: Number.parseFloat(last) } }
+			match2 = {
+				sold: Number.parseFloat(last),
+				_id: { $gt: mongoose.Types.ObjectId(id) }
+			}
+			break
+		case 'title-asc':
+			match1 = { name: { $gt: last } }
+			match2 = { name: last, _id: { $gt: mongoose.Types.ObjectId(id) } }
+			break
+		case 'title-desc':
+			match1 = { name: { $lt: last } }
+			match2 = { name: last, _id: { $gt: mongoose.Types.ObjectId(id) } }
+			break
+		case 'date-asc':
+			match1 = { created: { $gt: new Date(last) } }
+			match2 = {
+				created: new Date(last),
+				_id: { $gt: mongoose.Types.ObjectId(id) }
+			}
+			break
+		case 'date-desc':
+			match1 = { created: { $lt: new Date(last) } }
+			match2 = {
+				created: new Date(last),
+				_id: { $gt: mongoose.Types.ObjectId(id) }
+			}
+			break
+		case 'price-asc':
+			match1 = { basePrice: { $gt: Number.parseFloat(last) } }
+			match2 = {
+				basePrice: Number.parseFloat(last),
+				_id: { $gt: mongoose.Types.ObjectId(id) }
+			}
+			break
+		case 'price-desc':
+			match1 = { basePrice: { $lt: Number.parseFloat(last) } }
+			match2 = {
+				basePrice: Number.parseFloat(last),
+				_id: { $gt: mongoose.Types.ObjectId(id) }
+			}
+			break
+		default:
+			return { _id: { $gt: mongoose.Types.ObjectId(id) } }
+	}
+	return {
+		$or: [match1, match2]
+	}
+}
 
 exports.getProductStats = async (req, res) => {
 	try {
@@ -74,14 +141,19 @@ exports.getAllProducts = async (req, res) => {
 exports.getNewItems = async (req, res) => {
 	// Get active products by category
 	try {
-		let limit = 4
 		// All active products for category
-		const products = await Product.getProductDetailsbyCategory('.*', limit)
+		const products = await Product.getProductDetailsbyCategory('.*', {
+			limit: 4
+		})
 
 		if (!products || products.length == 0) {
 			return res.status(404).send({ error: 'Products not found.' })
 		}
-		res.status(200).send({ products: products, count: products.length })
+		res.status(200).send({
+			products: products.results,
+			count: products.results.length,
+			total: products.total
+		})
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
@@ -90,14 +162,36 @@ exports.getNewItems = async (req, res) => {
 exports.getActiveProducts = async (req, res) => {
 	// Get active products by category
 	try {
+		let sorting,
+			start = {},
+			limit = 12
 		const category = req.params.category ? req.params.category : '.*'
-		// All active products for category
-		const products = await Product.getProductDetailsbyCategory(category)
 
+		// SORTING
+		if (sortingFields.hasOwnProperty(req.query.sort)) {
+			sorting = sortingFields[req.query.sort]
+		} else {
+			sorting = { created: -1, _id: 1 }
+		}
+		if (req.query.last || req.query.id) {
+			start = buildPageQry(req.query.sort, req.query.last, req.query.id)
+		}
+
+		// All active products for category
+		const products = await Product.getProductDetailsbyCategory(category, {
+			sorting,
+			start,
+			limit
+		})
 		if (!products || products.length == 0) {
 			return res.status(404).send({ error: 'Products not found.' })
 		}
-		res.status(200).send({ products: products, count: products.length })
+
+		res.status(200).send({
+			products: products.results,
+			count: products.results.length,
+			total: products.total
+		})
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}

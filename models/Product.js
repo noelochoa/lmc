@@ -303,7 +303,7 @@ productSchema.statics.getAllProductsByCategory = async (category, search) => {
 
 productSchema.statics.getProductDetailsbyCategory = async (
 	category,
-	limit = 100
+	{ limit = 100, sorting = { created: -1 }, start = {} }
 ) => {
 	// Get product details belonging to supplied category
 	const products = await Product.aggregate([
@@ -318,6 +318,7 @@ productSchema.statics.getProductDetailsbyCategory = async (
 		{ $unwind: '$category' },
 		{
 			$match: {
+				...start,
 				isActive: true,
 				'category.name': {
 					$in: [new RegExp('^' + category + '$', 'i')]
@@ -341,26 +342,39 @@ productSchema.statics.getProductDetailsbyCategory = async (
 			}
 		},
 		{
-			$project: {
-				_id: -1,
-				name: 1,
-				seoname: 1,
-				basePrice: 1,
-				options: 1,
-				minOrderQuantity: 1,
-				category: 1,
-				isActive: 1,
-				images: 1,
-				discount: 1,
-				created: 1,
-				sold: 1
+			$facet: {
+				Total: [{ $count: 'Total' }],
+				Results: [
+					{
+						$project: {
+							name: 1,
+							seoname: 1,
+							basePrice: 1,
+							options: 1,
+							minOrderQuantity: 1,
+							category: 1,
+							isActive: 1,
+							images: 1,
+							discount: 1,
+							created: 1,
+							sold: 1
+						}
+					},
+
+					{ $sort: sorting },
+					{ $limit: limit }
+				]
 			}
 		},
-		{ $sort: { created: -1 } },
-		{ $limit: limit }
+		{
+			$project: {
+				results: '$Results',
+				total: { $arrayElemAt: ['$Total.Total', 0] }
+			}
+		}
 	]).option({ hint: { isActive: 1 } })
 
-	return products
+	return products[0]
 }
 
 productSchema.statics.getProductDetails = async (productName) => {
