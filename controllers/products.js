@@ -1,8 +1,6 @@
 const Product = require('../models/Product')
-const Category = require('../models/Category')
-const Discount = require('../models/Discount')
-const Comment = require('../models/Comment')
 const mongoose = require('mongoose')
+const { validationResult } = require('express-validator')
 const fs = require('fs')
 
 const sortingFields = {
@@ -209,7 +207,7 @@ exports.getActiveProductByName = async (req, res) => {
 			if (!product || product.length == 0) {
 				return res.status(404).send({ error: 'Products not found.' })
 			}
-			res.status(200).send({ product })
+			res.status(200).send(product)
 		} else {
 			return res.status(404).send({ error: 'Product not found.' })
 		}
@@ -467,5 +465,25 @@ exports.deleteProductImage = async (req, res) => {
 		}
 	} else {
 		res.status(400).send({ error: 'Product or image ID is invalid.' })
+	}
+}
+
+exports.findRelatedProducts = async (req, res) => {
+	if (req.params.productID && req.query.l) {
+		const errors = validationResult(req)
+		if (!errors.isEmpty()) {
+			return res.status(422).send({ error: 'Invalid input(s) format.' })
+		}
+		try {
+			const products = await Product.findSimilarProducts(
+				mongoose.Types.ObjectId(req.params.productID),
+				Number.parseInt(req.query.l)
+			)
+			res.status(200).send(products)
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(400).send({ error: 'Missing parameters.' })
 	}
 }

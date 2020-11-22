@@ -336,6 +336,14 @@ productSchema.statics.getProductDetailsbyCategory = async (
 							start: { $lte: new Date() },
 							end: { $gte: new Date() }
 						}
+					},
+					{
+						$project: {
+							target: 1,
+							percent: 1,
+							start: 1,
+							end: 1
+						}
 					}
 				],
 				as: 'discount'
@@ -406,6 +414,14 @@ productSchema.statics.getProductDetails = async (productName) => {
 							start: { $lte: new Date() },
 							end: { $gte: new Date() }
 						}
+					},
+					{
+						$project: {
+							target: 1,
+							percent: 1,
+							start: 1,
+							end: 1
+						}
 					}
 				],
 				as: 'discount'
@@ -422,19 +438,23 @@ productSchema.statics.getProductDetails = async (productName) => {
 		{
 			$project: {
 				_id: -1,
+				name: 1,
 				seoname: 1,
+				description: 1,
+				details: 1,
+				options: 1,
+				minOrderQuantity: 1,
 				basePrice: 1,
 				category: 1,
 				isActive: 1,
 				images: 1,
-				variants: 1,
 				discount: 1,
 				comments: 1
 			}
 		}
 	]).option({ hint: { seoname: 1 } })
 
-	return product
+	return product[0]
 }
 
 productSchema.statics.getProductDetailsById = async (IDs) => {
@@ -486,7 +506,6 @@ productSchema.statics.getProductDetailsById = async (IDs) => {
 				category: 1,
 				isActive: 1,
 				images: 1,
-				variants: 1,
 				discount: 1,
 				options: 1,
 				comments: 1
@@ -495,6 +514,101 @@ productSchema.statics.getProductDetailsById = async (IDs) => {
 	]).option({ hint: { seoname: 1 } })
 
 	return product
+}
+
+productSchema.statics.findSimilarProducts = async function (pID, limit = 4) {
+	const target = await Product.findOne({ _id: pID }).lean()
+	if (!target) return []
+
+	// Build Text Search query (name, details, description)
+	let details = target.details
+		? target.details.reduce((acc, grp) => {
+				let tmp = ''
+				for (const [key, val] of Object.entries(grp.items)) {
+					tmp += `${key} ${val}`
+				}
+				return acc + tmp + ' '
+		  }, '')
+		: ''
+	let pdesc = target.description ? target.description.substring(0, 100) : ''
+	let query = [target.name, details.trim(), pdesc.trim()].join(' ')
+
+	const products = await Product.aggregate([
+		{
+			$match: {
+				_id: { $ne: pID },
+				isActive: true,
+				$text: { $search: query }
+			}
+		},
+		{
+			$lookup: {
+				from: Category.collection.name,
+				localField: 'category',
+				foreignField: '_id',
+				as: 'category'
+			}
+		},
+		{ $unwind: '$category' },
+		{
+			$lookup: {
+				from: Discount.collection.name,
+				let: { id: '$_id' },
+				pipeline: [
+					{
+						$match: {
+							$expr: { $in: ['$$id', '$products'] },
+							start: { $lte: new Date() },
+							end: { $gte: new Date() }
+						}
+					},
+					{
+						$project: {
+							target: 1,
+							percent: 1,
+							start: 1,
+							end: 1
+						}
+					}
+				],
+				as: 'discount'
+			}
+		},
+		{
+			$lookup: {
+				from: Comment.collection.name,
+				localField: 'comments',
+				foreignField: '_id',
+				as: 'comments'
+			}
+		},
+		{
+			$project: {
+				_id: -1,
+				score: { $meta: 'textScore' },
+				name: 1,
+				seoname: 1,
+				description: 1,
+				details: 1,
+				options: 1,
+				minOrderQuantity: 1,
+				basePrice: 1,
+				category: 1,
+				isActive: 1,
+				images: 1,
+				discount: 1,
+				comments: 1
+			}
+		},
+		{
+			$sort: { score: { $meta: 'textScore' } }
+		},
+		{
+			$limit: limit
+		}
+	])
+
+	return products
 }
 
 const Product = mongoose.model('Product', productSchema, 'Products')

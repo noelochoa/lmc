@@ -13,7 +13,7 @@ const upload = multer({
 const ProductsController = require('../controllers/products')
 const auth = require('../middleware/auth')
 
-// PROTECTED
+// ------- PROTECTED ROUTES ------- //
 router.get('/cms', auth, ProductsController.getAllProducts)
 router.get('/cms/:category', auth, ProductsController.getAllProducts)
 router.get('/cms/item/:productID', auth, ProductsController.getProduct)
@@ -43,7 +43,7 @@ router.delete(
 	ProductsController.deleteProductImage
 )
 
-// PUBLIC ROUTES
+// ------- PUBLIC ROUTES ------- //
 router.get(
 	'/id/:productID',
 	check('productID').escape().trim(),
@@ -60,9 +60,15 @@ router.get(
 	ProductsController.getActiveProducts
 )
 router.get(
-	'/:category/:productName',
+	'/buy/:productName',
 	check('productName').escape().trim(),
 	ProductsController.getActiveProductByName
+)
+router.get(
+	'/related/:productID',
+	check('productID').escape().trim(),
+	check('l').isInt(),
+	ProductsController.findRelatedProducts
 )
 
 module.exports = router
