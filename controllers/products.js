@@ -141,7 +141,7 @@ exports.getNewItems = async (req, res) => {
 	try {
 		// All active products for category
 		const products = await Product.getProductDetailsbyCategory('.*', {
-			limit: 4
+			limit: req.query.l ? Number.parseInt(req.query.l) : 4
 		})
 
 		if (!products || products.length == 0) {
