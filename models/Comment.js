@@ -1,6 +1,6 @@
-const mongoose = require('mongoose')
-const Customer = require('./Customer')
 const Product = require('./Product')
+const Customer = require('./Customer')
+const mongoose = require('mongoose')
 
 const commentSchema = mongoose.Schema(
 	{
@@ -15,7 +15,7 @@ const commentSchema = mongoose.Schema(
 						'status.isVerified': true
 					})
 				},
-				message: 'Customer id is invalid'
+				message: 'Customer unknown or unauthorized.'
 			}
 		},
 		product: {
@@ -26,7 +26,7 @@ const commentSchema = mongoose.Schema(
 				validator: (val) => {
 					return Product.exists({ _id: val })
 				},
-				message: 'Product id is invalid'
+				message: 'Unknown product.'
 			}
 		},
 		// parent: {
@@ -62,6 +62,9 @@ const commentSchema = mongoose.Schema(
 			type: Date,
 			required: true,
 			default: Date.now
+		},
+		replied: {
+			type: Date
 		}
 	},
 	{

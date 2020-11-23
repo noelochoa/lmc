@@ -2,7 +2,8 @@ const mongoose = require('mongoose')
 const getSlug = require('speakingurl')
 const Category = require('./Category')
 const Discount = require('./Discount')
-const Comment = require('./Comment')
+// const Comment = require('./Comment')
+const Customer = require('./Customer')
 
 const productSchema = mongoose.Schema(
 	{
@@ -429,9 +430,48 @@ productSchema.statics.getProductDetails = async (productName) => {
 		},
 		{
 			$lookup: {
-				from: Comment.collection.name,
-				localField: 'comments',
-				foreignField: '_id',
+				from: 'Comments',
+				let: { comments: '$comments' },
+				pipeline: [
+					{
+						$match: {
+							$expr: { $in: ['$_id', '$$comments'] }
+						}
+					},
+					{
+						$lookup: {
+							from: Customer.collection.name,
+							localField: 'author',
+							foreignField: '_id',
+							as: 'author'
+						}
+					},
+					{ $unwind: '$author' },
+					{
+						$project: {
+							author: {
+								$concat: [
+									'$author.firstname',
+									' ',
+									'$author.lastname'
+								]
+							},
+							comment: {
+								$cond: {
+									if: { $eq: ['$isFlagged', true] },
+									then: 'This comment has been flagged.',
+									else: '$comment'
+								}
+							},
+							isFlagged: 1,
+							created: 1,
+							replied: 1,
+							reply: 1,
+							replyAuthor: 1
+						}
+					},
+					{ $sort: { created: -1 } }
+				],
 				as: 'comments'
 			}
 		},
@@ -492,7 +532,7 @@ productSchema.statics.getProductDetailsById = async (IDs) => {
 		},
 		{
 			$lookup: {
-				from: Comment.collection.name,
+				from: 'Comments',
 				localField: 'comments',
 				foreignField: '_id',
 				as: 'comments'
@@ -576,7 +616,7 @@ productSchema.statics.findSimilarProducts = async function (pID, limit = 4) {
 		},
 		{
 			$lookup: {
-				from: Comment.collection.name,
+				from: 'Comments',
 				localField: 'comments',
 				foreignField: '_id',
 				as: 'comments'

@@ -1,12 +1,33 @@
+const mongoose = require('mongoose')
 const Comment = require('../models/Comment')
+const Customer = require('../models/Customer')
+const { validationResult } = require('express-validator')
 
 exports.postComment = async (req, res) => {
 	// Post comment
 	try {
-		const comment = new Comment(req.body)
+		const errors = validationResult(req)
+		if (!errors.isEmpty()) {
+			return res.status(422).send({ error: 'Invalid input(s) format.' })
+		}
+		const customer = await Customer.findOne({
+			_id: req.body.author,
+			'status.isVerified': true
+		})
+		if (!customer) {
+			res.status(400).send({ error: 'Unknown or unauthorized account.' })
+		}
+		const comment = new Comment({
+			comment: req.body.comment,
+			author: customer._id,
+			product: mongoose.Types.ObjectId(req.body.product)
+		})
 		if (comment) {
 			await comment.postComment()
-			res.status(200).send(comment)
+			let ret = comment.toJSON()
+			ret.author = customer.name
+
+			res.status(200).send(ret)
 		} else {
 			res.status(500).send({ error: 'Cannot post comment.' })
 		}
@@ -39,7 +60,7 @@ exports.getComments = async (req, res) => {
 		try {
 			const comments = await Comment.find({
 				product: req.params.productID
-			}).sort({ created: 1 })
+			}).sort({ created: -1 })
 			if (!comments) {
 				return res.status(201).send({ error: 'No Comments.' })
 			}
@@ -86,7 +107,6 @@ exports.editComment = async (req, res) => {
 			for (let op of req.body) {
 				updateProps[op.property] = op.value
 			}
-
 			const result = await Comment.updateOne(
 				{ _id: req.params.commentID },
 				{ $set: updateProps },

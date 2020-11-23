@@ -12,8 +12,10 @@ router.get('/:commentID', CommentsController.getComment)
 router.get('/product/:productID', CommentsController.getComments)
 router.post(
 	'/',
-	check('comment').escape().trim(),
-	storeauth,
+	check('comment').trim().exists(),
+	check('product').exists(),
+	check('author').exists(),
+	// storeauth,
 	CommentsController.postComment
 )
 router.patch('/:commentID', auth, CommentsController.editComment)
