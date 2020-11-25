@@ -4,14 +4,16 @@ const router = express.Router()
 
 const CustomersController = require('../controllers/customers')
 const storeauth = require('../middleware/storeauth')
+const refsauth = require('../middleware/refreshstoreauth')
 
 router.get('/', storeauth, CustomersController.getCustomer)
 router.post(
-	'/',
+	'/register',
 	check('firstname').isAlphanumeric(),
 	check('lastname').isAlphanumeric(),
 	check('email').isEmail(),
 	check('password').isLength({ min: 6 }),
+	check('accountType').isAlphanumeric(),
 	CustomersController.createNewCustomer
 )
 router.post(
@@ -21,6 +23,7 @@ router.post(
 	CustomersController.loginCustomer
 )
 
+router.post('/refresh', refsauth, CustomersController.refresh)
 router.post('/logout', storeauth, CustomersController.logoutCustomer)
 router.post('/logoutall', storeauth, CustomersController.logoutAll)
 router.patch('/', storeauth, CustomersController.patchCustomer)

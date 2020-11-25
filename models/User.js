@@ -54,7 +54,7 @@ userSchema.pre('updateOne', async function (next) {
 	next()
 })
 
-userSchema.methods.generateAuthToken = async function (prevXSRF) {
+userSchema.methods.generateAuthToken = async function (prevXSRF = '') {
 	// Generate an auth token for the user
 	const user = this
 	const xsrf = crypto.randomBytes(48).toString('base64')

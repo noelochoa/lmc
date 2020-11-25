@@ -1,4 +1,5 @@
 const crypto = require('crypto')
+const moment = require('moment')
 const sgmail = require('@sendgrid/mail')
 const twilio = require('twilio')
 const { validationResult } = require('express-validator')
@@ -9,6 +10,7 @@ const smshelper = require('../helpers/smshelper')
 const Customer = require('../models/Customer')
 const Token = require('../models/Token')
 const ResetToken = require('../models/ResetToken')
+const AccessTokenWeb = require('../models/AccessTokenWeb')
 
 exports.getAllCustomers = async (req, res) => {
 	// Get all accounts
@@ -68,15 +70,20 @@ exports.createNewCustomer = async (req, res) => {
 
 		const customer = await Customer.createEntry(req.body)
 		if (customer) {
+			// Create User
 			await customer.save()
+			const genToken = crypto.randomBytes(3).toString('hex').toUpperCase()
 
-			const genToken = crypto
-				.randomBytes(88)
-				.toString('hex')
-				.toUpperCase()
+			// create access token & csrf token for auth
+			const { token, xsrf } = await customer.generateAuthToken()
+			const accToken = new AccessTokenWeb({
+				user: customer._id,
+				token: token
+			})
+			await accToken.save()
 
 			// update or create new token document for verification
-			await Token.updateOne(
+			const result = await Token.updateOne(
 				{ customer: customer._id },
 				{
 					$set: {
@@ -86,16 +93,32 @@ exports.createNewCustomer = async (req, res) => {
 				},
 				{ upsert: true, runValidators: true }
 			)
-			const csrfToken = crypto.randomBytes(48).toString('hex')
-			const token = await customer.generateAuthToken(csrfToken)
+			// Send the email (TODO IN CLIENT APP)
+			if (!result || result.n == 0) {
+				return res
+					.status(500)
+					.send({ error: 'Could not process your request.' })
+			}
+
+			sgmail.setApiKey(process.env.SENDGRID_API_KEY)
+			const accntVerifyOpts = mailhelper.createVerificationMail(
+				customer.email,
+				customer.firstname,
+				genToken
+			)
+			// Send
+			await sgmail.send(accntVerifyOpts)
+
 			const user = {
 				name: customer.firstname,
 				email: customer.email,
 				status: customer.status
 			}
-			res.status(201).send({ user, token, csrfToken })
+			res.status(201).send({ user, token, xsrf })
 		} else {
-			res.status(400).send({ error: 'Cannot create Customer.' })
+			res.status(400).send({
+				error: 'Cannot complete customer account creation.'
+			})
 		}
 	} catch (error) {
 		res.status(400).send({ error: error.message })
@@ -360,9 +383,16 @@ exports.verifySMSToken = async (req, res) => {
 }
 
 exports.getCustomer = async (req, res) => {
-	//Login a registered Customer
+	//Get Customer account details
 	try {
-		const customer = req.customer
+		const customer = {
+			firstname: req.customer.firstname,
+			lastname: req.customer.lastname,
+			email: req.customer.email,
+			type: req.customer.accountType,
+			status: req.customer.status
+		}
+
 		res.status(200).send({ customer })
 	} catch (error) {
 		res.status(400).send({ error: error.message })
@@ -379,14 +409,19 @@ exports.loginCustomer = async (req, res) => {
 				error: 'Login failed! Check authentication credentials'
 			})
 		}
-		const csrfToken = crypto.randomBytes(48).toString('hex')
-		const token = await customer.generateAuthToken(csrfToken)
+		const { token, xsrf } = await customer.generateAuthToken()
+		const accToken = new AccessTokenWeb({
+			user: customer._id,
+			token: token
+		})
+		await accToken.save()
 		const user = {
-			name: customer.firstname,
+			name: customer.firstname + ' ' + customer.lastname,
 			email: customer.email,
-			status: customer.status
+			status: customer.status,
+			type: customer.accountType
 		}
-		res.send({ user, token, csrfToken })
+		res.send({ user, token, xsrf })
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
@@ -470,3 +505,53 @@ exports.patchCustomer = async (req, res) => {
 		res.status(400).send({ error: 'CustomerID is invalid.' })
 	}
 }*/
+
+exports.refresh = async (req, res) => {
+	// Get new JWT for valid refresh token
+	try {
+		if (req.customer && req.token) {
+			if (req.token.isRefreshable) {
+				// Valid but has expired, reissue tokens
+				const { token, xsrf } = await req.customer.generateAuthToken(
+					req.prevXSRF
+				)
+				const accToken = new AccessTokenWeb({
+					user: req.customer._id,
+					token: token
+				})
+				await accToken.save()
+				res.send({ token, xsrf })
+
+				// Mark as refreshed
+				req.token.refreshed = true
+				req.token.modified = new Date()
+				await req.token.save()
+				return
+			} else if (req.token.isExpired) {
+				// Refresh window expired. Needs reauthentication
+				return res.status(403).send({
+					error: 'Relogin needed due to long inactivity.'
+				})
+			} else if (req.token.modified > moment().subtract(1, 'minutes')) {
+				// Return OK but empty (multiple subsequent requests received)
+				return res.send()
+			} else {
+				// ALERT: Potentially stolen
+				// Revoke all user's tokens for safety
+				await AccessToken.updateMany(
+					{ user: req.customer._id },
+					{ $set: { revoked: true } },
+					{ runValidators: true }
+				)
+				return res.status(403).send({
+					error: 'Anomaly detected. Reauthentication is needed.'
+				})
+			}
+		}
+		res.status(403).send({
+			error: 'Unable to recreate token.'
+		})
+	} catch (error) {
+		res.status(500).send({ error: error.message })
+	}
+}

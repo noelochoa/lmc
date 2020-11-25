@@ -1,9 +1,8 @@
 const mongoose = require('mongoose')
 const validator = require('validator')
 const bcrypt = require('bcryptjs')
+const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
-
-const { check } = require('express-validator')
 
 const customerSchema = mongoose.Schema(
 	{
@@ -102,15 +101,15 @@ const customerSchema = mongoose.Schema(
 		},
 		login: {
 			type: Date
-		},
-		tokens: [
-			{
-				token: {
-					type: String,
-					required: true
-				}
-			}
-		]
+		}
+		// tokens: [
+		// 	{
+		// 		token: {
+		// 			type: String,
+		// 			required: true
+		// 		}
+		// 	}
+		// ]
 	},
 	{
 		toJSON: {
@@ -144,19 +143,22 @@ customerSchema.pre('updateOne', async function (next) {
 	next()
 })
 
-customerSchema.methods.generateAuthToken = async function (csrfToken) {
+customerSchema.methods.generateAuthToken = async function (prevXSRF = '') {
 	// Generate an auth token for the Customer
 	const customer = this
+	const xsrf = crypto.randomBytes(48).toString('base64')
+	const xsrfHash = await bcrypt.hash(xsrf, 10)
+
 	const token = jwt.sign(
-		{ _id: customer._id, _csrf_token: csrfToken },
+		{ _id: customer._id, _xref: xsrfHash, _prev: prevXSRF || '' },
 		process.env.JWT_STORE_KEY,
 		{
-			expiresIn: '1 week'
+			expiresIn: '1h'
 		}
 	)
-	customer.tokens = customer.tokens.concat({ token })
-	await customer.save()
-	return token
+	// customer.tokens = customer.tokens.concat({ token })
+	// await customer.save()
+	return { token, xsrf }
 }
 
 customerSchema.statics.findByCredentials = async (email, password) => {
@@ -168,14 +170,14 @@ customerSchema.statics.findByCredentials = async (email, password) => {
 		})
 
 		if (!customer) {
-			throw new Error('Invalid login credentials')
+			throw new Error('Invalid login credentials.')
 		}
 		const isPasswordMatch = await bcrypt.compare(
 			password,
 			customer.password
 		)
 		if (!isPasswordMatch) {
-			throw new Error('Invalid login credentials')
+			throw new Error('Invalid login credentials.')
 		}
 		return customer
 	}
