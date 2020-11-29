@@ -449,6 +449,7 @@ productSchema.statics.getProductDetails = async (productName) => {
 					{ $unwind: '$author' },
 					{
 						$project: {
+							id: '$_id',
 							author: {
 								$concat: [
 									'$author.firstname',

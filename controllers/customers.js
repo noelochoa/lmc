@@ -104,7 +104,8 @@ exports.createNewCustomer = async (req, res) => {
 			const accntVerifyOpts = mailhelper.createVerificationMail(
 				customer.email,
 				customer.firstname,
-				genToken
+				genToken,
+				process.env.WEB_URL + '/profile/verify'
 			)
 			// Send
 			await sgmail.send(accntVerifyOpts)
@@ -158,7 +159,8 @@ exports.sendResetToken = async (req, res) => {
 		sgmail.setApiKey(process.env.SENDGRID_API_KEY)
 		const resetPWMailOptions = mailhelper.createPasswordResetMail(
 			req.body.email,
-			genToken
+			genToken,
+			process.env.WEB_URL + '/account/resetpw'
 		)
 		await sgmail.send(resetPWMailOptions)
 		res.status(200).send({
@@ -210,7 +212,7 @@ exports.verifyNewPass = async (req, res) => {
 			}
 		} else {
 			return res.status(400).send({
-				message:
+				error:
 					'Supplied code or email is invalid. ' +
 					'Recheck input fields or try to reissue a new password reset request.'
 			})
@@ -249,7 +251,8 @@ exports.generateToken = async (req, res) => {
 		const verificationMailOptions = mailhelper.createVerificationMail(
 			req.customer.email,
 			req.customer.firstname,
-			genToken
+			genToken,
+			process.env.WEB_URL + '/profile/verify'
 		)
 		await sgmail.send(verificationMailOptions)
 		res.status(200).send({
@@ -266,12 +269,13 @@ exports.verifyToken = async (req, res) => {
 	// verify supplied token
 	try {
 		const customer = await Customer.findOne({
-			_id: req.customer._id,
+			email: req.body.email,
 			'status.isVerified': false
 		})
+
 		if (customer) {
 			const verification = await Token.findOne({
-				customer: req.customer._id,
+				customer: customer._id,
 				verify: 'email'
 			})
 			if (verification) {
@@ -320,7 +324,6 @@ exports.generateSMSToken = async (req, res) => {
 		)
 
 		// res.status(200).send({ token: genToken })
-		/*
 		const client = new twilio(
 			process.env.TWILIO_ACCOUNT_SID,
 			process.env.TWILIO_AUTH_TOKEN
@@ -336,7 +339,7 @@ exports.generateSMSToken = async (req, res) => {
 			message:
 				'A verification code has been sent to your phonenumber: ' +
 				req.customer.phonenumber
-		})*/
+		})
 	} catch (error) {
 		res.status(500).send({ error: error.message })
 	}
@@ -386,13 +389,16 @@ exports.getCustomer = async (req, res) => {
 	//Get Customer account details
 	try {
 		const customer = {
+			id: req.customer._id,
 			firstname: req.customer.firstname,
 			lastname: req.customer.lastname,
 			email: req.customer.email,
 			type: req.customer.accountType,
-			status: req.customer.status
+			status: req.customer.status,
+			address: req.customer.address,
+			phonenumber: req.customer.phonenumber,
+			notification: req.customer.notification
 		}
-
 		res.status(200).send({ customer })
 	} catch (error) {
 		res.status(400).send({ error: error.message })
@@ -430,10 +436,8 @@ exports.loginCustomer = async (req, res) => {
 exports.logoutCustomer = async (req, res) => {
 	// Log Customer out of the application
 	try {
-		req.customer.tokens = req.customer.tokens.filter((token) => {
-			return token.token != req.token
-		})
-		await req.customer.save()
+		req.token.revoked = true
+		await req.token.save()
 		res.send()
 	} catch (error) {
 		res.status(500).send({ error: error.message })
@@ -443,8 +447,11 @@ exports.logoutCustomer = async (req, res) => {
 exports.logoutAll = async (req, res) => {
 	// Log Customer out of all devices
 	try {
-		req.customer.tokens.splice(0, req.customer.tokens.length)
-		await req.customer.save()
+		await AccessToken.updateMany(
+			{ user: req.customer._id },
+			{ $set: { revoked: true } },
+			{ runValidators: true }
+		)
 		res.send()
 	} catch (error) {
 		res.status(500).send({ error: error.message })
@@ -453,15 +460,23 @@ exports.logoutAll = async (req, res) => {
 
 exports.patchCustomer = async (req, res) => {
 	// Edit Customer details
-	if (req.params.accountID) {
+	if (req.customer) {
 		try {
 			const updateProps = {}
 			for (let op of req.body) {
 				updateProps[op.property] = op.value
 			}
+			// Check if phone has changed
+			if (
+				updateProps.phonenumber &&
+				updateProps.phonenumber != req.customer.phonenumber
+			) {
+				updateProps.status = req.customer.status
+				updateProps.status.isSMSVerified = false
+			}
 			// console.log(updateProps)
 			const result = await Customer.updateOne(
-				{ _id: req.params.accountID },
+				{ _id: req.customer._id },
 				{ $set: updateProps },
 				{ runValidators: true }
 			)

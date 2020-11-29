@@ -41,7 +41,12 @@ router.patch(
 	CustomersController.verifyNewPass
 )
 router.post('/token', storeauth, CustomersController.generateToken)
-router.post('/verify', storeauth, CustomersController.verifyToken)
+router.post(
+	'/verify',
+	check('email').isEmail(),
+	check('token').isLength(6),
+	CustomersController.verifyToken
+)
 router.post('/smstoken', storeauth, CustomersController.generateSMSToken)
 router.post('/smsverify', storeauth, CustomersController.verifySMSToken)
 
