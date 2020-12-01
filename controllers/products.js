@@ -162,7 +162,8 @@ exports.getActiveProducts = async (req, res) => {
 	try {
 		let sorting,
 			start = {},
-			limit = 12
+			limit = 12,
+			search = {}
 		const category = req.params.category ? req.params.category : '.*'
 
 		// SORTING
@@ -174,12 +175,21 @@ exports.getActiveProducts = async (req, res) => {
 		if (req.query.last || req.query.id) {
 			start = buildPageQry(req.query.sort, req.query.last, req.query.id)
 		}
+		// LIMIT
+		if (req.query.l) {
+			limit = Number.parseInt(req.query.l)
+		}
+		// SEARCH QUERY
+		if (req.query.s) {
+			search = { name: { $in: [new RegExp(req.query.s, 'i')] } }
+		}
 
 		// All active products for category
 		const products = await Product.getProductDetailsbyCategory(category, {
 			sorting,
 			start,
-			limit
+			limit,
+			search
 		})
 		if (!products || products.length == 0) {
 			return res.status(404).send({ error: 'Products not found.' })

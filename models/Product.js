@@ -304,7 +304,7 @@ productSchema.statics.getAllProductsByCategory = async (category, search) => {
 
 productSchema.statics.getProductDetailsbyCategory = async (
 	category,
-	{ limit = 100, sorting = { created: -1 }, start = {} }
+	{ limit = 100, sorting = { created: -1 }, start = {}, search = {} }
 ) => {
 	// Get product details belonging to supplied category
 	const products = await Product.aggregate([
@@ -319,6 +319,7 @@ productSchema.statics.getProductDetailsbyCategory = async (
 		{ $unwind: '$category' },
 		{
 			$match: {
+				...search,
 				...start,
 				isActive: true,
 				'category.name': {
