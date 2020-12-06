@@ -61,23 +61,37 @@ const basketItemSchema = mongoose.Schema(
 	{ _id: false }
 )
 
-const basketSchema = mongoose.Schema({
-	customer: {
-		type: mongoose.Types.ObjectId,
-		unique: true,
-		sparse: true
+const basketSchema = mongoose.Schema(
+	{
+		customer: {
+			type: mongoose.Types.ObjectId,
+			unique: true,
+			sparse: true
+		},
+		created: {
+			type: Date,
+			required: true,
+			default: Date.now
+		},
+		modified: {
+			type: Date,
+			required: true,
+			default: Date.now,
+			expires: '1w'
+		},
+		products: [basketItemSchema]
 	},
-	created: {
-		type: Date,
-		required: true,
-		default: Date.now
-	},
-	modified: {
-		type: Date,
-		required: true,
-		default: Date.now
-	},
-	products: [basketItemSchema]
+	{
+		toJSON: {
+			virtuals: true
+		}
+	}
+)
+
+basketSchema.virtual('count').get(function () {
+	return this.products.reduce((total, item) => {
+		return total + item.quantity
+	}, 0)
 })
 
 basketSchema.pre('save', async function (next) {
@@ -151,14 +165,14 @@ basketSchema.methods.addItem = async function (reqBody) {
 
 		reqBody.options.forEach((item) => {
 			const attribute = product.options.find((option) => {
-				return option._id.toString() === item._option
+				return option.attribute === item._option
 			})
 
 			if (!attribute) {
 				throw new Error('Supplied attribute type not configurable')
 			}
 			const selected = attribute.choices.find((value) => {
-				return value._id.toString() === item._selected
+				return value.value === item._selected
 			})
 			if (!selected) {
 				throw new Error('Supplied attribute value not an option')
@@ -199,14 +213,14 @@ basketSchema.methods.editItem = async function (reqBody) {
 
 		reqBody.options.forEach((item) => {
 			const attribute = product.options.find((option) => {
-				return option._id.toString() === item._option
+				return option.attribute === item._option
 			})
 
 			if (!attribute) {
 				throw new Error('Supplied attribute type not configurable')
 			}
 			const selected = attribute.choices.find((value) => {
-				return value._id.toString() === item._selected
+				return value.value === item._selected
 			})
 			if (!selected) {
 				throw new Error('Supplied attribute value not an option')
@@ -257,16 +271,17 @@ basketSchema.statics.getBasketDetails = async function (searchParam) {
 							pipeline: [
 								{
 									$match: {
-										$expr: { $eq: ['$$id', '$_id'] },
+										$expr: { $in: ['$$id', '$products'] },
 										start: { $lte: new Date() },
 										end: { $gte: new Date() }
 									}
 								},
 								{
 									$project: {
-										_id: 1,
+										target: 1,
 										percent: 1,
-										target: 1
+										start: 1,
+										end: 1
 									}
 								}
 							],
@@ -280,6 +295,7 @@ basketSchema.statics.getBasketDetails = async function (searchParam) {
 							name: 1,
 							seoname: 1,
 							category: 1,
+							minOrderQuantity: 1,
 							basePrice: 1,
 							images: 1,
 							discount: 1,
@@ -290,7 +306,7 @@ basketSchema.statics.getBasketDetails = async function (searchParam) {
 				as: 'products.product'
 			}
 		},
-		// { $unwind: '$products.options' },
+		{ $unwind: '$products.product' },
 		{
 			$group: {
 				_id: '$_id',
@@ -302,7 +318,7 @@ basketSchema.statics.getBasketDetails = async function (searchParam) {
 		}
 	]).option({ hint: { 'products.product': 1 } })
 
-	return basket
+	return basket[0]
 }
 
 basketSchema.methods.combineBasket = async function (otherBasketID) {
@@ -348,14 +364,14 @@ basketSchema.statics.createNewBasket = async (reqBody) => {
 		}
 		reqBody.options.forEach((item) => {
 			const attribute = product.options.find((option) => {
-				return option._id.toString() === item._option
+				return option.attribute === item._option
 			})
 
 			if (!attribute) {
 				throw new Error('Supplied attribute type not configurable')
 			}
 			const selected = attribute.choices.find((value) => {
-				return value._id.toString() === item._selected
+				return value.value === item._selected
 			})
 			if (!selected) {
 				throw new Error('Supplied attribute value not an option')
@@ -407,14 +423,14 @@ basketSchema.statics.findUpdateBasket = async (basketID, reqBody) => {
 
 		reqBody.options.forEach((item) => {
 			const attribute = product.options.find((option) => {
-				return option._id.toString() === item._option
+				return option.attribute === item._option
 			})
 
 			if (!attribute) {
 				throw new Error('Supplied attribute type not configurable')
 			}
 			const selected = attribute.choices.find((value) => {
-				return value._id.toString() === item._selected
+				return value.value === item._selected
 			})
 			if (!selected) {
 				throw new Error('Supplied attribute value not an option')

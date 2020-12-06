@@ -3,10 +3,10 @@ const Customer = require('../models/Customer')
 const Basket = require('../models/Basket')
 
 const guestauth = async (req, res, next) => {
-	if (req.header('Basket')) {
-		const basketToken = req.header('Basket')
-		const csrfToken = req.header('X-BASKET-CSRF-TOKEN')
-			? req.header('X-BASKET-CSRF-TOKEN')
+	if (req.header('X-CART')) {
+		const basketToken = req.header('X-CART')
+		const csrfToken = req.header('X-CSRF-CART')
+			? req.header('X-CSRF-CART')
 			: null
 		await jwt.verify(
 			basketToken,
@@ -18,13 +18,16 @@ const guestauth = async (req, res, next) => {
 							_id: decoded._basket_id
 						})
 						if (!basket) {
-							throw new Error('No entry found.')
+							// Create new
+							return next()
 						}
 						if (
 							req.method != 'GET' &&
 							decoded._csrf_token !== csrfToken
 						) {
-							throw new Error('Invalid Basket CSRF token')
+							// Create new
+							return next()
+							// throw new Error('Invalid Basket CSRF token')
 						}
 						//save to req
 						req.basket = basket
@@ -37,9 +40,10 @@ const guestauth = async (req, res, next) => {
 						})
 					}
 				} else {
-					return res.status(401).send({
-						error: 'Not authorized to access this resource'
-					})
+					// return res.status(401).send({
+					// 	error: 'Not authorized to access this resource'
+					// })
+					return next()
 				}
 			}
 		)

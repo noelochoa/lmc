@@ -9,8 +9,8 @@ const sortingFields = {
 	'title-desc': { name: -1, _id: 1 },
 	'date-desc': { created: -1, _id: 1 },
 	'date-asc': { created: 1, _id: 1 },
-	'price-desc': { basePrice: -1, _id: 1 },
-	'price-asc': { basePrice: 1, _id: 1 }
+	'price-desc': { fprice: -1, _id: 1 },
+	'price-asc': { fprice: 1, _id: 1 }
 }
 
 function buildPageQry(target, last, id) {
@@ -48,16 +48,16 @@ function buildPageQry(target, last, id) {
 			}
 			break
 		case 'price-asc':
-			match1 = { basePrice: { $gt: Number.parseFloat(last) } }
+			match1 = { fprice: { $gt: Number.parseFloat(last) } }
 			match2 = {
-				basePrice: Number.parseFloat(last),
+				fprice: Number.parseFloat(last),
 				_id: { $gt: mongoose.Types.ObjectId(id) }
 			}
 			break
 		case 'price-desc':
-			match1 = { basePrice: { $lt: Number.parseFloat(last) } }
+			match1 = { fprice: { $lt: Number.parseFloat(last) } }
 			match2 = {
-				basePrice: Number.parseFloat(last),
+				fprice: Number.parseFloat(last),
 				_id: { $gt: mongoose.Types.ObjectId(id) }
 			}
 			break

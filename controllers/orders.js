@@ -34,6 +34,18 @@ exports.getOrders = async (req, res) => {
 	}
 }
 
+exports.getCustomerOrders = async (req, res) => {
+	//Get Customer Orders
+	try {
+		const orders = await Order.getCustomerOrders({
+			customer: req.customer._id
+		})
+		res.status(200).send(orders)
+	} catch (error) {
+		res.status(400).send({ error: error.message })
+	}
+}
+
 exports.findSimilarOrders = async (req, res) => {
 	if (req.params.orderID) {
 		try {
@@ -107,14 +119,32 @@ exports.getOrder = async (req, res) => {
 	// Get order details
 	if (req.params.orderID) {
 		try {
-			// const order = await Order.findOne({
-			// 	_id: req.params.orderID
-			// }).populate('products.product', 'id name seoname images')
-			const oID = mongoose.Types.ObjectId(req.params.orderID)
 			const order = await Order.getOrderDetails({
-				_id: oID
+				_id: mongoose.Types.ObjectId(req.params.orderID)
 			})
 			res.status(200).send(order)
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(400).send({ error: 'Order ID missing or invalid.' })
+	}
+}
+
+exports.getCustomerOrder = async (req, res) => {
+	// Get order details
+	if (req.params.orderID && req.customer) {
+		try {
+			const order = await Order.getOrderDetails({
+				_id: mongoose.Types.ObjectId(req.params.orderID),
+				customer: req.customer._id
+			})
+			if (order) {
+				return res.status(200).send(order)
+			}
+			res.status(404).send({
+				error: 'Unknown or unauthorized order ID supplied.'
+			})
 		} catch (error) {
 			res.status(400).send({ error: error.message })
 		}

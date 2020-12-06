@@ -472,12 +472,95 @@ orderSchema.statics.getOrders = async function ({ year, month, status }) {
 	return orders
 }
 
+orderSchema.statics.getCustomerOrders = async function (searchParam) {
+	// Get product details of order
+	const orders = await Order.aggregate([
+		{
+			$match: searchParam
+		},
+		{
+			$lookup: {
+				from: OrderStatus.collection.name,
+				localField: 'status',
+				foreignField: '_id',
+				as: 'status'
+			}
+		},
+		{
+			$lookup: {
+				from: Customer.collection.name,
+				localField: 'customer',
+				foreignField: '_id',
+				as: 'customer'
+			}
+		},
+		{
+			$project: {
+				id: '$_id',
+				ordernum: 1,
+				status: {
+					$arrayElemAt: [
+						{
+							$map: {
+								input: '$status',
+								as: 'status',
+								in: {
+									id: '$$status._id',
+									status: '$$status.status'
+								}
+							}
+						},
+						0
+					]
+				},
+				target: 1,
+				total: 1,
+				deliveryType: 1,
+				shippingAddress: 1,
+				created: 1,
+				customer: {
+					$arrayElemAt: [
+						{
+							$map: {
+								input: '$customer',
+								as: 'customer',
+								in: {
+									id: '$$customer._id',
+									firstname: '$$customer.firstname',
+									lastname: '$$customer.lastname'
+								}
+							}
+						},
+						0
+					]
+				}
+			}
+		},
+		{
+			$sort: { created: -1 }
+		}
+	])
+	orders.forEach((item) => {
+		item.orderRef = buildOrderNum(item.created, item.ordernum)
+	})
+	return orders
+}
+
 orderSchema.statics.getOrderDetails = async function (searchParam) {
 	// Get product details of order
 	const order = await Order.aggregate([
 		{
 			$match: searchParam
 		},
+		{
+			$lookup: {
+				from: OrderStatus.collection.name,
+				localField: 'status',
+				foreignField: '_id',
+				as: 'statusFld'
+			}
+		},
+		{ $unwind: '$statusFld' },
 		{ $unwind: '$products' },
 		{
 			$lookup: {
@@ -542,6 +625,7 @@ orderSchema.statics.getOrderDetails = async function (searchParam) {
 			$group: {
 				_id: '$_id',
 				status: { $first: '$status' },
+				statusName: { $first: '$statusFld.status' },
 				ordernum: { $first: '$ordernum' },
 				replacedBy: { $first: '$replacedBy' },
 				target: { $first: '$target' },

@@ -320,7 +320,7 @@ productSchema.statics.getProductDetailsbyCategory = async (
 		{
 			$match: {
 				...search,
-				...start,
+				// ...start,
 				isActive: true,
 				'category.name': {
 					$in: [new RegExp('^' + category + '$', 'i')]
@@ -360,6 +360,9 @@ productSchema.statics.getProductDetailsbyCategory = async (
 							name: 1,
 							seoname: 1,
 							basePrice: 1,
+							fprice: {
+								$multiply: ['$basePrice', '$minOrderQuantity']
+							},
 							options: 1,
 							minOrderQuantity: 1,
 							category: 1,
@@ -370,7 +373,11 @@ productSchema.statics.getProductDetailsbyCategory = async (
 							sold: 1
 						}
 					},
-
+					{
+						$match: {
+							...start
+						}
+					},
 					{ $sort: sorting },
 					{ $limit: limit }
 				]
@@ -634,6 +641,9 @@ productSchema.statics.findSimilarProducts = async function (pID, limit = 4) {
 				details: 1,
 				options: 1,
 				minOrderQuantity: 1,
+				fprice: {
+					$multiply: ['$basePrice', '$minOrderQuantity']
+				},
 				basePrice: 1,
 				category: 1,
 				isActive: 1,

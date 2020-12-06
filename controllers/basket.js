@@ -58,7 +58,7 @@ exports.getGuestBasket = async (req, res) => {
 				_id: basketID
 			})
 			if (!basket || basket.length == 0) {
-				return res.status(404).send({ error: 'Basket not found.' })
+				return res.status(404).send({ error: 'No items in cart.' })
 			}
 			return res.status(200).send({ basket })
 		} else if (req.basket) {
@@ -66,7 +66,7 @@ exports.getGuestBasket = async (req, res) => {
 				_id: req.basket._id
 			})
 			if (!basket || basket.length == 0) {
-				return res.status(404).send({ error: 'Basket not found.' })
+				return res.status(404).send({ error: 'No items in cart.' })
 			}
 			return res.status(200).send({ basket })
 		}
@@ -108,19 +108,25 @@ exports.addToBasket = async (req, res) => {
 				basket.customer = req.customer._id
 				await basket.save()
 
-				res.status(200).send({ message: 'Added item to basket' })
+				let basketObj = basket.toJSON()
+				res.status(200).send({
+					message: 'Added item to basket',
+					count: basket.count
+				})
 			} else {
 				// If not existing basket but has supplied a basket ID
 				basket = await Basket.createNewBasket(req.body)
 				basket.customer = req.customer._id
 				await basket.save()
 
-				const csrfToken = crypto.randomBytes(48).toString('hex')
+				const csrfToken = crypto.randomBytes(48).toString('base64')
 				const token = await basket.generateAccessToken(csrfToken)
+
 				res.status(200).send({
 					message: 'New Basket created',
 					token,
-					csrfToken
+					xsrf: csrfToken,
+					count: basket.count
 				})
 			}
 		} else {
@@ -139,18 +145,22 @@ exports.addToGuestBasket = async (req, res) => {
 			// If not logged in, but has supplied a basket ID
 			basket = await Basket.findUpdateBasket(req.basket._id, req.body)
 			await basket.save()
-			res.status(200).send({ message: 'Added item to basket' })
+			res.status(200).send({
+				message: 'Added item to basket',
+				count: basket.count
+			})
 		} else {
 			// create new
 			basket = await Basket.createNewBasket(req.body)
 			await basket.save()
 
-			const csrfToken = crypto.randomBytes(48).toString('hex')
+			const csrfToken = crypto.randomBytes(48).toString('base64')
 			const token = await basket.generateAccessToken(csrfToken)
-			res.status(200).send({
+			res.status(201).send({
 				message: 'New Basket created',
 				token,
-				csrfToken
+				xsrf: csrfToken,
+				count: basket.count
 			})
 		}
 	} catch (error) {
@@ -200,7 +210,10 @@ exports.patchGuestBasket = async (req, res) => {
 					}
 				}
 				res.status(200).send({
-					message: result ? 'Successfully updated' : 'Nothing updated'
+					message: result
+						? 'Successfully updated'
+						: 'Nothing updated',
+					count: basket.count
 				})
 			} else {
 				return res.status(404).send({
@@ -211,7 +224,7 @@ exports.patchGuestBasket = async (req, res) => {
 			res.status(400).send({ error: error.message })
 		}
 	} else {
-		res.status(400).send({ error: 'BasketID is invalid' })
+		res.status(404).send({ error: 'BasketID is invalid' })
 	}
 }
 
@@ -257,7 +270,11 @@ exports.patchBasket = async (req, res) => {
 					}
 				}
 				res.status(200).send({
-					message: result ? 'Successfully updated' : 'Nothing updated'
+					message: result
+						? 'Successfully updated'
+						: 'Nothing updated',
+
+					count: basket.count
 				})
 			} else {
 				return res.status(404).send({
