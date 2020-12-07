@@ -1,5 +1,4 @@
 const mongoose = require('mongoose')
-const crypto = require('crypto')
 const Basket = require('../models/Basket')
 const Product = require('../models/Product')
 const comparator = require('../helpers/comparehelper')
@@ -58,17 +57,29 @@ exports.getGuestBasket = async (req, res) => {
 				_id: basketID
 			})
 			if (!basket || basket.length == 0) {
-				return res.status(404).send({ error: 'No items in cart.' })
+				return res
+					.status(200)
+					.send({ message: 'Empty shopping basket.' })
 			}
 			return res.status(200).send({ basket })
 		} else if (req.basket) {
+			let tokens = {}
 			const basket = await Basket.getBasketDetails({
 				_id: req.basket._id
 			})
 			if (!basket || basket.length == 0) {
-				return res.status(404).send({ error: 'No items in cart.' })
+				return res
+					.status(200)
+					.send({ message: 'Empty shopping basket.' })
 			}
-			return res.status(200).send({ basket })
+			// If near expiry, refresh access token
+			if (req.refreshBasket) {
+				const { token, xsrf } = await req.basket.generateCartToken()
+				tokens = { token, xsrf }
+			}
+			return res
+				.status(200)
+				.send({ basket, count: req.basket.count, ...tokens })
 		}
 		res.status(200).send({ message: 'Empty shopping basket' })
 	} catch (error) {
@@ -119,13 +130,11 @@ exports.addToBasket = async (req, res) => {
 				basket.customer = req.customer._id
 				await basket.save()
 
-				const csrfToken = crypto.randomBytes(48).toString('base64')
-				const token = await basket.generateAccessToken(csrfToken)
-
+				const { token, xsrf } = await basket.generateCartToken()
 				res.status(200).send({
-					message: 'New Basket created',
+					message: 'New shopping basket created',
 					token,
-					xsrf: csrfToken,
+					xsrf,
 					count: basket.count
 				})
 			}
@@ -142,24 +151,32 @@ exports.addToGuestBasket = async (req, res) => {
 	try {
 		let basket
 		if (req.basket) {
+			let tokens = {}
+
 			// If not logged in, but has supplied a basket ID
 			basket = await Basket.findUpdateBasket(req.basket._id, req.body)
 			await basket.save()
+
+			// If near expiry, refresh access token
+			if (req.refreshBasket) {
+				const { token, xsrf } = await basket.generateCartToken()
+				tokens = { token, xsrf }
+			}
 			res.status(200).send({
 				message: 'Added item to basket',
-				count: basket.count
+				count: basket.count,
+				...tokens
 			})
 		} else {
 			// create new
 			basket = await Basket.createNewBasket(req.body)
 			await basket.save()
 
-			const csrfToken = crypto.randomBytes(48).toString('base64')
-			const token = await basket.generateAccessToken(csrfToken)
+			const { token, xsrf } = await basket.generateCartToken()
 			res.status(201).send({
-				message: 'New Basket created',
+				message: 'New shopping basket created',
 				token,
-				xsrf: csrfToken,
+				xsrf,
 				count: basket.count
 			})
 		}
@@ -173,17 +190,15 @@ exports.patchGuestBasket = async (req, res) => {
 	if (req.basket) {
 		try {
 			const { product, quantity, options } = req.body
-			const basket = await Basket.findOne({
-				_id: req.basket._id
-			})
-
+			const basket = req.basket
 			const productObj = await Product.findOne({
 				_id: product,
 				isActive: true
 			})
 
 			if (basket && basket.products && product) {
-				let result
+				let result,
+					tokens = {}
 				for (let i in basket.products) {
 					// if found
 					if (
@@ -209,22 +224,32 @@ exports.patchGuestBasket = async (req, res) => {
 						break
 					}
 				}
+
+				// If near expiry, refresh access token
+				if (req.refreshBasket) {
+					const { token, xsrf } = await basket.generateCartToken()
+					tokens = { token, xsrf }
+				}
+
 				res.status(200).send({
 					message: result
 						? 'Successfully updated'
 						: 'Nothing updated',
-					count: basket.count
+					count: basket.count,
+					...tokens
 				})
 			} else {
 				return res.status(404).send({
-					error: 'Basket or Product ID is invalid'
+					error: 'Cart or Product ID is invalid'
 				})
 			}
 		} catch (error) {
 			res.status(400).send({ error: error.message })
 		}
 	} else {
-		res.status(404).send({ error: 'BasketID is invalid' })
+		res.status(404).send({
+			error: 'Could not retrieve or invalid resource.'
+		})
 	}
 }
 
@@ -278,13 +303,15 @@ exports.patchBasket = async (req, res) => {
 				})
 			} else {
 				return res.status(404).send({
-					error: 'Basket or Product ID is invalid'
+					error: 'Cart or Product ID is invalid'
 				})
 			}
 		} catch (error) {
 			res.status(400).send({ error: error.message })
 		}
 	} else {
-		res.status(400).send({ error: 'BasketID is invalid' })
+		res.status(404).send({
+			error: 'Could not retrieve or invalid resource.'
+		})
 	}
 }

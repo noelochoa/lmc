@@ -2,6 +2,8 @@ const mongoose = require('mongoose')
 const Product = require('../models/Product')
 const Category = require('../models/Category')
 const Discount = require('../models/Discount')
+const bcrypt = require('bcryptjs')
+const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 // const validator = require('validator')
 
@@ -129,17 +131,20 @@ basketSchema.pre('save', async function (next) {
 	next()
 })
 
-basketSchema.methods.generateAccessToken = async function (csrfToken) {
-	// Generate token for accessing
+basketSchema.methods.generateCartToken = async function () {
+	// Generate token for accessing cart
 	const basket = this
+	const xsrf = crypto.randomBytes(48).toString('base64')
+	const xsrfHash = await bcrypt.hash(xsrf, 10)
+
 	const token = jwt.sign(
-		{ _basket_id: basket._id, _csrf_token: csrfToken },
+		{ _id: basket._id, _xref: xsrfHash },
 		process.env.JWT_STORE_KEY,
 		{
 			expiresIn: '1 week'
 		}
 	)
-	return token
+	return { token, xsrf }
 }
 
 basketSchema.methods.addItem = async function (reqBody) {

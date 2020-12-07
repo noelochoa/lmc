@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken')
-const Customer = require('../models/Customer')
+const bcrypt = require('bcryptjs')
+// const Customer = require('../models/Customer')
 const Basket = require('../models/Basket')
 
 const guestauth = async (req, res, next) => {
@@ -14,35 +15,39 @@ const guestauth = async (req, res, next) => {
 			async (err, decoded) => {
 				if (decoded) {
 					try {
+						if (req.method != 'GET') {
+							if (!csrfToken) return next()
+							const isMatch = await bcrypt.compare(
+								csrfToken,
+								decoded._xref
+							)
+							if (!isMatch) return next()
+						}
+
 						const basket = await Basket.findOne({
-							_id: decoded._basket_id
+							_id: decoded._id
 						})
 						if (!basket) {
 							// Create new
 							return next()
 						}
+						//Check if near expiry (1 day left or 1 week)
 						if (
-							req.method != 'GET' &&
-							decoded._csrf_token !== csrfToken
+							decoded.exp - new Date().getTime() / 1000 <=
+							1 * 24 * 60 * 60
 						) {
-							// Create new
-							return next()
-							// throw new Error('Invalid Basket CSRF token')
+							req.refreshBasket = true
 						}
 						//save to req
 						req.basket = basket
 						next()
 					} catch (error) {
-						return res.status(401).send({
-							error:
-								'Not authorized to access this resource. ' +
-								error.message
+						return res.status(400).send({
+							error: 'Request error. ' + error.message
 						})
 					}
 				} else {
-					// return res.status(401).send({
-					// 	error: 'Not authorized to access this resource'
-					// })
+					// Ignored
 					return next()
 				}
 			}
