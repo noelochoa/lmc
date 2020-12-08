@@ -31,7 +31,7 @@ const guestauth = async (req, res, next) => {
 							// Create new
 							return next()
 						}
-						//Check if near expiry (1 day left or 1 week)
+						//Check if near expiry (1 day left)
 						if (
 							decoded.exp - new Date().getTime() / 1000 <=
 							1 * 24 * 60 * 60
@@ -48,7 +48,12 @@ const guestauth = async (req, res, next) => {
 					}
 				} else {
 					// Ignored
-					return next()
+					if (err.name == 'TokenExpiredError') return next()
+					else {
+						return res
+							.status(404)
+							.send({ error: 'Unknown or invalid resource.' })
+					}
 				}
 			}
 		)
