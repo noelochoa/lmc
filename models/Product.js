@@ -560,7 +560,7 @@ productSchema.statics.getProductDetailsById = async (IDs) => {
 				comments: 1
 			}
 		}
-	]).option({ hint: { seoname: 1 } })
+	])
 
 	return product
 }

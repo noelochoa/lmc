@@ -163,6 +163,12 @@ exports.placeOrder = async (req, res) => {
 			OrderStatus.findOne({ status: 'placed' }),
 			Customer.findOne({ _id: params.customer })
 		])
+		const targetType =
+			customer.accountType == 'reseller' &&
+			customer.status.isResellerApproved
+				? 'reseller'
+				: 'all'
+
 		// Set as default (placed)
 		params.status = status._id
 		params.deliveryType = params.type
@@ -180,9 +186,7 @@ exports.placeOrder = async (req, res) => {
 				return item._id == paramProduct.product
 			})
 			const discounts = selProduct.discount.filter((item) => {
-				return (
-					item.target == customer.accountType || item.target == 'all'
-				)
+				return item.target == targetType || item.target == 'all'
 			})
 			// price per product
 			let sub = selProduct.basePrice * paramProduct.quantity
@@ -238,6 +242,12 @@ exports.replaceOrder = async (req, res) => {
 				OrderStatus.findOne({ status: 'replaced' }),
 				Customer.findOne({ _id: params.customer })
 			])
+			const targetType =
+				customer.accountType == 'reseller' &&
+				customer.status.isResellerApproved
+					? 'reseller'
+					: 'all'
+
 			// Set as default (placed)
 			params.status = status._id
 			params.deliveryType = params.type
@@ -254,10 +264,7 @@ exports.replaceOrder = async (req, res) => {
 					return item._id == paramProduct.product
 				})
 				const discounts = selProduct.discount.filter((item) => {
-					return (
-						item.target == customer.accountType ||
-						item.target == 'all'
-					)
+					return item.target == targetType || item.target == 'all'
 				})
 				// price per product
 				let sub = selProduct.basePrice * paramProduct.quantity
@@ -340,5 +347,140 @@ exports.patchOrder = async (req, res) => {
 		}
 	} else {
 		res.status(400).send({ error: 'Order ID is invalid.' })
+	}
+}
+
+// Customer Order
+
+exports.placeCustomerOrder = async (req, res) => {
+	if (req.customer && req.basket) {
+		try {
+			let params = req.body
+			let finalPrice = 0
+			let buildProducts = []
+
+			// Check target date
+			if (Date.parse(params.target) - new Date() < 24 * 60 * 60 * 1000) {
+				return res.status(400).send({
+					error: 'Target date should be on the future.'
+				})
+			}
+
+			// Find Placed status
+			const status = await OrderStatus.findOne({ status: 'placed' })
+
+			// Set as default (placed)
+			params.status = status._id
+			params.customer = req.customer._id
+			const productList = req.basket.products.slice()
+
+			const targetType =
+				req.customer.accountType == 'reseller' &&
+				req.customer.status.isResellerApproved
+					? 'reseller'
+					: 'all'
+
+			// Query selected product details
+			const products = await Product.getProductDetailsById(
+				productList.map((item) => {
+					return item.product
+				})
+			)
+
+			// Compute price per item
+			productList.forEach((paramProduct, idx) => {
+				const selProduct = products.find((item) => {
+					return (
+						item._id.toString() == paramProduct.product.toString()
+					)
+				})
+				if (!selProduct) {
+					throw new Error(
+						'Cart item(s) have changed while placing order. Refresh and retry later.'
+					)
+				}
+				const discounts = selProduct.discount.filter((item) => {
+					return item.target == targetType || item.target == 'all'
+				})
+				// price per product
+				let sub = selProduct.basePrice * paramProduct.quantity
+				// Discount found for each item
+				const maxDiscount =
+					discounts && discounts.length > 0
+						? Math.max.apply(
+								Math,
+								discounts.map(function (o) {
+									return o.percent
+								})
+						  )
+						: 0
+				// Find option price
+				paramProduct.options.forEach((paramOption) => {
+					const optionGrp = selProduct.options.find((selOpt) => {
+						return selOpt.attribute == paramOption._option
+					})
+					if (!optionGrp) {
+						throw new Error(
+							'Unknown custom option selected. Please check your cart items.'
+						)
+					}
+					const choice = optionGrp.choices.find((selChoice) => {
+						return selChoice.value == paramOption._selected
+					})
+					if (!choice) {
+						throw new Error(
+							'Unknown custom option selected. Please check your cart items.'
+						)
+					}
+					sub += paramProduct.quantity * choice.price
+				})
+				// Update per item prices
+				let price = sub
+				let pfprice = parseFloat(
+					sub - (sub * maxDiscount) / 100
+				).toFixed(0)
+
+				// Update total price
+				finalPrice += parseInt(pfprice)
+
+				// Update fields
+				buildProducts.push({
+					quantity: paramProduct.quantity,
+					options: paramProduct.options,
+					product: paramProduct.product,
+					price: price,
+					finalPrice: parseInt(pfprice),
+					discount: maxDiscount
+				})
+			})
+			// Set final price to insert
+			params.total = finalPrice
+			if (finalPrice != params.price) {
+				throw new Error(
+					'Price has changed while placing order. Please refresh before proceeding.'
+				)
+			}
+
+			// Create Order object and save
+			params.products = buildProducts.slice()
+			delete params.price
+			const order = new Order(params)
+			await order.save()
+
+			// Clear shopping cart
+			req.basket.products = []
+			req.basket.save()
+
+			res.status(200).send({
+				message: 'Order placed successfully. ',
+				count: 0
+			})
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(400).send({
+			error: 'Unauthorized action or missing required info.'
+		})
 	}
 }

@@ -4,6 +4,7 @@ const router = express.Router()
 const OrdersController = require('../controllers/orders')
 const auth = require('../middleware/auth')
 const storeauth = require('../middleware/storeauth')
+const guestauth = require('../middleware/guestauth')
 
 // CMS
 router.get('/stats', auth, OrdersController.getOrderStats)
@@ -18,5 +19,6 @@ router.patch('/cms/replace/:orderID', auth, OrdersController.replaceOrder)
 // Protected (Webstore)
 router.get('/', storeauth, OrdersController.getCustomerOrders)
 router.get('/:orderID', storeauth, OrdersController.getCustomerOrder)
+router.post('/', storeauth, guestauth, OrdersController.placeCustomerOrder)
 
 module.exports = router
