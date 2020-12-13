@@ -55,6 +55,11 @@ const productSchema = mongoose.Schema(
 				}
 			}
 		],
+		difficulty: {
+			type: Number,
+			required: true,
+			default: 1
+		},
 		basePrice: {
 			type: Number,
 			required: true,
@@ -496,6 +501,7 @@ productSchema.statics.getProductDetails = async (productName) => {
 				basePrice: 1,
 				category: 1,
 				isActive: 1,
+				sold: 1,
 				images: 1,
 				discount: 1,
 				comments: 1
@@ -552,6 +558,7 @@ productSchema.statics.getProductDetailsById = async (IDs) => {
 				_id: -1,
 				seoname: 1,
 				basePrice: 1,
+				sold: 1,
 				category: 1,
 				isActive: 1,
 				images: 1,

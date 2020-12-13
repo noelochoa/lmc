@@ -20,5 +20,6 @@ router.patch('/cms/replace/:orderID', auth, OrdersController.replaceOrder)
 router.get('/', storeauth, OrdersController.getCustomerOrders)
 router.get('/:orderID', storeauth, OrdersController.getCustomerOrder)
 router.post('/', storeauth, guestauth, OrdersController.placeCustomerOrder)
+router.patch('/:orderID', storeauth, OrdersController.patchCustomerOrder)
 
 module.exports = router

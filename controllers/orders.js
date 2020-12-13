@@ -3,6 +3,7 @@ const Order = require('../models/Order')
 const OrderStatus = require('../models/OrderStatus')
 const Customer = require('../models/Customer')
 const Product = require('../models/Product')
+const { result } = require('lodash')
 // const { check } = require('express-validator')
 
 exports.getOrderStats = async (req, res) => {
@@ -351,7 +352,6 @@ exports.patchOrder = async (req, res) => {
 }
 
 // Customer Order
-
 exports.placeCustomerOrder = async (req, res) => {
 	if (req.customer && req.basket) {
 		try {
@@ -359,6 +359,12 @@ exports.placeCustomerOrder = async (req, res) => {
 			let finalPrice = 0
 			let buildProducts = []
 
+			// Check if customer is verified
+			if (!req.customer.status || !req.customer.status.isVerified) {
+				return res.status(400).send({
+					error: 'Customer account is not verified.'
+				})
+			}
 			// Check target date
 			if (Date.parse(params.target) - new Date() < 24 * 60 * 60 * 1000) {
 				return res.status(400).send({
@@ -373,6 +379,9 @@ exports.placeCustomerOrder = async (req, res) => {
 			params.status = status._id
 			params.customer = req.customer._id
 			const productList = req.basket.products.slice()
+			const productIDs = productList.map((item) => {
+				return item.product
+			})
 
 			const targetType =
 				req.customer.accountType == 'reseller' &&
@@ -381,11 +390,7 @@ exports.placeCustomerOrder = async (req, res) => {
 					: 'all'
 
 			// Query selected product details
-			const products = await Product.getProductDetailsById(
-				productList.map((item) => {
-					return item.product
-				})
-			)
+			const products = await Product.getProductDetailsById(productIDs)
 
 			// Compute price per item
 			productList.forEach((paramProduct, idx) => {
@@ -459,17 +464,24 @@ exports.placeCustomerOrder = async (req, res) => {
 				throw new Error(
 					'Price has changed while placing order. Please refresh before proceeding.'
 				)
+			} else {
+				delete params.price
 			}
 
 			// Create Order object and save
 			params.products = buildProducts.slice()
-			delete params.price
 			const order = new Order(params)
-			await order.save()
 
-			// Clear shopping cart
+			// Clear shopping cart & increment sold
 			req.basket.products = []
-			req.basket.save()
+			await Promise.all([
+				order.save(),
+				req.basket.save(),
+				Product.updateMany(
+					{ _id: { $in: productIDs } },
+					{ $inc: { sold: 1 } }
+				)
+			])
 
 			res.status(200).send({
 				message: 'Order placed successfully. ',
@@ -481,6 +493,41 @@ exports.placeCustomerOrder = async (req, res) => {
 	} else {
 		res.status(400).send({
 			error: 'Unauthorized action or missing required info.'
+		})
+	}
+}
+
+// Edit customer order (mainly cancel)
+exports.patchCustomerOrder = async (req, res) => {
+	if (req.customer && req.params.orderID) {
+		const order = await Order.findOne({
+			_id: mongoose.Types.ObjectId(req.params.orderID),
+			customer: req.customer._id
+		}).populate('status')
+
+		if (!order) {
+			return res.status(400).send({ error: 'Unknown order query.' })
+		}
+
+		// Still in Placed status
+		if (order.status.step == 0) {
+			// Use cancelled status
+			const cancelled = await OrderStatus.findOne({ status: 'cancelled' })
+			order.status = cancelled._id
+			order.modifed = new Date()
+			order.save()
+
+			res.status(200).send({
+				message: 'Successfully cancelled the order.'
+			})
+		} else {
+			res.status(400).send({
+				error: 'Order status can no longer be changed.'
+			})
+		}
+	} else {
+		res.status(400).send({
+			error: 'Required info missing.'
 		})
 	}
 }

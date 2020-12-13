@@ -18,11 +18,16 @@ const port = process.env.PORT
 require('./db/db')
 
 const app = express()
+let ALLOWED_ORIGINS = ['http://localhost:8080', 'http://localhost:8081']
 
 // Add headers
 app.use(function (req, res, next) {
+	let origin = req.headers.origin
+	let allowed =
+		ALLOWED_ORIGINS.indexOf(origin) >= 0 ? origin : ALLOWED_ORIGINS[0]
+
 	// Website you wish to allow to connect
-	res.setHeader('Access-Control-Allow-Origin', 'http://localhost:8080')
+	res.setHeader('Access-Control-Allow-Origin', allowed)
 	// Request methods you wish to allow
 	res.setHeader(
 		'Access-Control-Allow-Methods',

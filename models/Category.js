@@ -9,6 +9,11 @@ const categorySchema = mongoose.Schema({
 		required: true,
 		trim: true
 	},
+	difficulty: {
+		type: Number,
+		required: true,
+		default: 1
+	},
 	created: {
 		type: Date,
 		default: Date.now

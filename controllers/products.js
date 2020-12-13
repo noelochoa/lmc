@@ -19,7 +19,7 @@ function buildPageQry(target, last, id) {
 
 	switch (target) {
 		case 'best-selling':
-			match1 = { sold: { $gt: Number.parseFloat(last) } }
+			match1 = { sold: { $lt: Number.parseFloat(last) } }
 			match2 = {
 				sold: Number.parseFloat(last),
 				_id: { $gt: mongoose.Types.ObjectId(id) }
