@@ -794,6 +794,92 @@ orderSchema.statics.findSimilarOptions = async function (oID, options) {
 	return items
 }
 
+orderSchema.statics.getNumOrders = async function (year, month) {
+	// get whole month
+	const base = moment().startOf('day')
+	let qyear = base.year(),
+		qmonth = base.month()
+
+	if (!isNaN(year) && year.length === 4) {
+		qyear = year
+	}
+	if (!isNaN(month) && month > 0 && month <= 12) {
+		qmonth = month - 1
+	}
+	const qdate = moment({ year: qyear, month: qmonth })
+	const orders = await Order.aggregate([
+		{
+			$lookup: {
+				from: OrderStatus.collection.name,
+				localField: 'status',
+				foreignField: '_id',
+				as: 'status'
+			}
+		},
+		{ $unwind: '$status' },
+		{
+			$match: {
+				'status.step': { $in: [1, 2] }, // Accepted, Preparing
+				target: {
+					// $gte: qdate.startOf('month').toDate(),
+					$gte: moment().toDate(),
+					$lte: qdate.endOf('month').toDate()
+				}
+			}
+		},
+		{
+			$group: {
+				_id: { $dateToString: { format: '%Y/%m/%d', date: '$target' } },
+				ordersNum: {
+					$sum: 1
+				}
+			}
+		}
+	])
+
+	return orders
+}
+
+orderSchema.statics.getNumOrdersByRange = async function (start, end) {
+	// Get Number of orders within range
+	const orders = await Order.aggregate([
+		{
+			$lookup: {
+				from: OrderStatus.collection.name,
+				localField: 'status',
+				foreignField: '_id',
+				as: 'status'
+			}
+		},
+		{ $unwind: '$status' },
+		{
+			$match: {
+				'status.step': { $in: [1, 2] }, // Accepted, Preparing
+				target: {
+					$gte: start,
+					$lte: end
+				}
+			}
+		},
+		{
+			$group: {
+				_id: {
+					$dateToString: { format: '%Y/%m/%d', date: '$target' }
+				},
+				ordersNum: {
+					$sum: 1
+				}
+			}
+		},
+		{
+			$sort: {
+				_id: -1
+			}
+		}
+	])
+	return orders
+}
+
 orderSchema.plugin(AutoIncrement, { inc_field: 'ordernum' })
 const Order = mongoose.model('Order', orderSchema, 'Orders')
 

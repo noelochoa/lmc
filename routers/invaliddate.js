@@ -6,6 +6,7 @@ const auth = require('../middleware/auth')
 
 //router.get('/', auth, InvalidDatesController.getDates)
 router.get('/', InvalidDatesController.getDates)
+router.get('/checkout', InvalidDatesController.getDateStats)
 router.get('/:invalidDateID', auth, InvalidDatesController.getDate)
 router.post('/', auth, InvalidDatesController.createInvalidDate)
 router.patch('/:invalidDateID', auth, InvalidDatesController.patchInvalidDate)

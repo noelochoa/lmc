@@ -9,12 +9,11 @@ const storeauth = require('../middleware/storeauth')
 // GUEST BASKET ROUTES
 router.get(
 	'/guest/:basketID',
-	check('basketID')
-		.escape()
-		.trim(),
+	check('basketID').escape().trim(),
 	BasketController.getGuestBasket
 )
 router.get('/', guestauth, BasketController.getGuestBasket)
+router.post('/eta', guestauth, BasketController.getETA)
 router.post('/', guestauth, BasketController.addToGuestBasket)
 router.patch('/', guestauth, BasketController.patchGuestBasket)
 

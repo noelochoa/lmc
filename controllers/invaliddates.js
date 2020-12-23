@@ -1,4 +1,5 @@
 const InvalidDate = require('../models/InvalidDate')
+const Order = require('../models/Order')
 
 exports.getDates = async (req, res) => {
 	// Get all invalid date entries
@@ -6,6 +7,20 @@ exports.getDates = async (req, res) => {
 		const { year, month } = req.query
 		const holidays = await InvalidDate.getInvalidDates(year, month)
 		res.status(200).send(holidays)
+	} catch (error) {
+		res.status(400).send({ error: error.message })
+	}
+}
+
+exports.getDateStats = async (req, res) => {
+	// Get all invalid date entries & workload for selected month-year
+	try {
+		const { year, month } = req.query
+		const [holidays, worklist] = await Promise.all([
+			InvalidDate.getInvalidDates(year, month),
+			await Order.getNumOrders(year, month)
+		])
+		res.status(200).send({ holidays, worklist })
 	} catch (error) {
 		res.status(400).send({ error: error.message })
 	}
