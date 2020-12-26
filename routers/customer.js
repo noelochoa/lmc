@@ -8,7 +8,7 @@ router.get('/', auth, CustomersController.getAllCustomers)
 router.get('/stats', auth, CustomersController.getCustomerStats)
 router.get('/pending', auth, CustomersController.getPendingResellers)
 router.get('/:accountID', auth, CustomersController.getCustomerDetails)
-router.patch('/:accountID', auth, CustomersController.patchCustomer)
+router.patch('/:accountID', auth, CustomersController.patchCustomerAccount)
 router.post('/', auth, CustomersController.createNewCustomer)
 
 module.exports = router

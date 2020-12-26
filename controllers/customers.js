@@ -458,6 +458,42 @@ exports.logoutAll = async (req, res) => {
 	}
 }
 
+exports.patchCustomerAccount = async (req, res) => {
+	// Edit Customer details
+	if (req.params.accountID) {
+		try {
+			const updateProps = {}
+			for (let op of req.body) {
+				updateProps[op.property] = op.value
+			}
+			// Check if phone has changed
+			if (
+				updateProps.phonenumber &&
+				updateProps.phonenumber != req.customer.phonenumber
+			) {
+				updateProps.status = req.customer.status
+				updateProps.status.isSMSVerified = false
+			}
+			// console.log(updateProps)
+			const result = await Customer.updateOne(
+				{ _id: req.params.accountID },
+				{ $set: updateProps },
+				{ runValidators: true }
+			)
+			if (!result || result.n == 0) {
+				return res
+					.status(404)
+					.send({ error: 'Error updating customer details.' })
+			}
+			res.status(200).send({ message: 'Successfully updated.' })
+		} catch (error) {
+			res.status(400).send({ error: error.message })
+		}
+	} else {
+		res.status(400).send({ error: 'CustomerID is invalid.' })
+	}
+}
+
 exports.patchCustomer = async (req, res) => {
 	// Edit Customer details
 	if (req.customer) {
