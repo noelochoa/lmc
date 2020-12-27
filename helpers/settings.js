@@ -5,11 +5,11 @@ const imageStorage = {
 	destination: async (req, file, cb) => {
 		const { productID } = req.params
 		if (productID) {
-			const path = `./images/${productID}`
+			const path = __dirname + `/images/${productID}`
 			await mkdirp.sync(path)
 			cb(null, path)
 		} else {
-			cb(null, './images/')
+			cb(null, __dirname + '/images/')
 		}
 	},
 	filename: function (req, file, cb) {
