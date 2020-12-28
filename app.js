@@ -20,14 +20,14 @@ require('./db/db')
 const app = express()
 let ALLOWED_ORIGINS =
 	process.env.NODE_ENV === 'production'
-		? ['http://localhost:8080', 'http://localhost:8081']
-		: [
+		? [
 				'https://www.bake-free.co',
 				'https://bake-free.co',
 				'https://www.admin.bake-free.co',
 				,
 				'https://admin.bake-free.co'
 		  ]
+		: ['http://localhost:8080', 'http://localhost:8081']
 
 // Add headers
 app.use(function (req, res, next) {
