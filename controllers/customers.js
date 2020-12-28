@@ -111,9 +111,11 @@ exports.createNewCustomer = async (req, res) => {
 			await sgmail.send(accntVerifyOpts)
 
 			const user = {
-				name: customer.firstname,
+				id: customer._id,
+				name: customer.firstname + ' ' + customer.lastname,
 				email: customer.email,
-				status: customer.status
+				status: customer.status,
+				type: customer.accountType
 			}
 			res.status(201).send({ user, token, xsrf })
 		} else {
@@ -422,6 +424,7 @@ exports.loginCustomer = async (req, res) => {
 		})
 		await accToken.save()
 		const user = {
+			id: customer._id,
 			name: customer.firstname + ' ' + customer.lastname,
 			email: customer.email,
 			status: customer.status,
