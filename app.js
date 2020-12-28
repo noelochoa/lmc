@@ -18,7 +18,16 @@ const port = process.env.PORT
 require('./db/db')
 
 const app = express()
-let ALLOWED_ORIGINS = ['http://localhost:8080', 'http://localhost:8081']
+let ALLOWED_ORIGINS =
+	process.env.NODE_ENV === 'production'
+		? ['http://localhost:8080', 'http://localhost:8081']
+		: [
+				'https://www.bake-free.co',
+				'https://bake-free.co',
+				'https://www.admin.bake-free.co',
+				,
+				'https://admin.bake-free.co'
+		  ]
 
 // Add headers
 app.use(function (req, res, next) {
