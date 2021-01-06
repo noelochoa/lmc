@@ -33,5 +33,8 @@
 		"eslint-plugin-prettier": "^3.3.1",
 		"nodemon": "^2.0.6",
 		"prettier": "^2.2.1"
+	},
+	"resolutions": {
+		"axios": "^0.21.1"
 	}
 }
