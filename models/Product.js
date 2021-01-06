@@ -75,8 +75,8 @@ const productSchema = mongoose.Schema(
 				attribute: {
 					type: String,
 					required: true,
-					trim: true,
-					unique: true
+					trim: true
+					// unique: true
 				},
 				choices: [
 					{
