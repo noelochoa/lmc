@@ -107,7 +107,7 @@ exports.getFeaturedProducts = async (req, res) => {
 			isActive: true,
 			isFeatured: true
 		})
-			.select('name seoname images')
+			.select('name seoname images description')
 			.sort({ modified: -1 })
 		res.status(200).send(products)
 	} catch (error) {
