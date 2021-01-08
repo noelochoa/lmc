@@ -102,8 +102,8 @@ const mailhelper = {
 				' and is now: ' +
 				mailhelper.capitalizeFirstLetter(status) +
 				'.\n\n' +
-				'Please visit our website for more details regarding your order.\n' +
-				'This is an automated notification regarding your order/s. \n' +
+				'Please visit our website for more details about your order.\n' +
+				'This is an automated notification regarding your order status. \n' +
 				'Please do not reply to this email.. \n\n' +
 				'Thanks,\n' +
 				'LMC Web Support Team\n',
@@ -120,8 +120,8 @@ const mailhelper = {
 				'<h2>' +
 				mailhelper.capitalizeFirstLetter(status) +
 				'</h2>' +
-				'<p>Please visit our website for more details regarding your order.</p>' +
-				'<p><i>This is an automated notification sent your order/s. <br/>' +
+				'<p>Please visit our website for more details about your order.</p>' +
+				'<p><i>This is an automated notification regarding your order status. <br/>' +
 				'Please do not reply to this email.</i><p>' +
 				'Thanks, <br/>' +
 				'LMC Web Support Team' +
