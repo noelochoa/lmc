@@ -210,7 +210,6 @@ orderSchema.pre('updateOne', async function (next) {
 		])
 		if (current.status.toString() != newStatus._id.toString()) {
 			// Send notification to Customer
-			/* TODO
 			sgmail.setApiKey(process.env.SENDGRID_API_KEY)
 			const orderNotifOptions = mailhelper.createOrderUpdateMail(
 				current.customer.email,
@@ -218,7 +217,7 @@ orderSchema.pre('updateOne', async function (next) {
 				buildOrderNum(current.created.getYear(), current.ordernum),
 				newStatus.status
 			)
-			sgmail.send(orderNotifOptions)*/
+			sgmail.send(orderNotifOptions)
 		}
 		next()
 	} catch (err) {
