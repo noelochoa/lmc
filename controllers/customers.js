@@ -423,7 +423,8 @@ exports.loginCustomer = async (req, res) => {
 			user: customer._id,
 			token: token
 		})
-		await accToken.save()
+		customer.login = new Date()
+		await Promise.all([accToken.save(), customer.save()])
 		const user = {
 			id: customer._id,
 			name: customer.firstname + ' ' + customer.lastname,
