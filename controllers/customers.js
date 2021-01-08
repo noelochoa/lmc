@@ -84,7 +84,7 @@ exports.createNewCustomer = async (req, res) => {
 
 			// update or create new token document for verification
 			const result = await Token.updateOne(
-				{ customer: req.customer._id, verify: 'email' },
+				{ customer: customer._id, verify: 'email' },
 				{
 					$set: {
 						token: genToken,
