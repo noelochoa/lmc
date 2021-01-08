@@ -214,10 +214,10 @@ orderSchema.pre('updateOne', async function (next) {
 			const orderNotifOptions = mailhelper.createOrderUpdateMail(
 				current.customer.email,
 				current.customer.firstname,
-				buildOrderNum(current.created.getYear(), current.ordernum),
+				buildOrderNum(current.created, current.ordernum),
 				newStatus.status
 			)
-			sgmail.send(orderNotifOptions)
+			await sgmail.send(orderNotifOptions)
 		}
 		next()
 	} catch (err) {
