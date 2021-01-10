@@ -794,6 +794,8 @@ orderSchema.statics.findSimilarOptions = async function (oID, options) {
 }
 
 orderSchema.statics.getNumOrders = async function (year, month) {
+	const tzoffset = moment().format('Z')
+
 	// get whole month
 	const base = moment().startOf('day')
 	let qyear = base.year(),
@@ -832,7 +834,7 @@ orderSchema.statics.getNumOrders = async function (year, month) {
 					$dateToString: {
 						format: '%Y/%m/%d',
 						date: '$target',
-						timezone: '+09:00'
+						timezone: tzoffset
 					}
 				},
 				ordersNum: {
@@ -846,6 +848,8 @@ orderSchema.statics.getNumOrders = async function (year, month) {
 }
 
 orderSchema.statics.getNumOrdersByRange = async function (start, end) {
+	const tzoffset = moment().format('Z')
+
 	// Get Number of orders within range
 	const orders = await Order.aggregate([
 		{
@@ -872,7 +876,7 @@ orderSchema.statics.getNumOrdersByRange = async function (start, end) {
 					$dateToString: {
 						format: '%Y/%m/%d',
 						date: '$target',
-						timezone: '+09:00'
+						timezone: tzoffset
 					}
 				},
 				ordersNum: {
