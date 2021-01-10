@@ -828,7 +828,13 @@ orderSchema.statics.getNumOrders = async function (year, month) {
 		},
 		{
 			$group: {
-				_id: { $dateToString: { format: '%Y/%m/%d', date: '$target' } },
+				_id: {
+					$dateToString: {
+						format: '%Y/%m/%d',
+						date: '$target',
+						timezone: '+09:00'
+					}
+				},
 				ordersNum: {
 					$sum: 1
 				}
@@ -863,7 +869,11 @@ orderSchema.statics.getNumOrdersByRange = async function (start, end) {
 		{
 			$group: {
 				_id: {
-					$dateToString: { format: '%Y/%m/%d', date: '$target' }
+					$dateToString: {
+						format: '%Y/%m/%d',
+						date: '$target',
+						timezone: '+09:00'
+					}
 				},
 				ordersNum: {
 					$sum: 1
