@@ -594,7 +594,7 @@ exports.refresh = async (req, res) => {
 			} else {
 				// ALERT: Potentially stolen
 				// Revoke all user's tokens for safety
-				await AccessToken.updateMany(
+				await AccessTokenWeb.updateMany(
 					{ user: req.customer._id },
 					{ $set: { revoked: true } },
 					{ runValidators: true }
