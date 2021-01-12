@@ -153,7 +153,7 @@ customerSchema.methods.generateAuthToken = async function (prevXSRF = '') {
 		{ _id: customer._id, _xref: xsrfHash, _prev: prevXSRF || '' },
 		process.env.JWT_STORE_KEY,
 		{
-			expiresIn: '10s'
+			expiresIn: '1h'
 		}
 	)
 	// customer.tokens = customer.tokens.concat({ token })
