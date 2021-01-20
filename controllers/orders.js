@@ -54,36 +54,33 @@ exports.findSimilarOrders = async (req, res) => {
 				unique = new Map()
 			queries = []
 			let params = { ...req.body }
+			let orderID = mongoose.Types.ObjectId(req.params.orderID)
 			/*
 			if (params.status) {
 				// Find similar status
 				queries.push(
-					Order.findSimilarStatus(req.params.orderID, params.status)
+					Order.findSimilarStatus(orderID, params.status)
 				)
 			}
 			if (params.customer) {
 				// Find similar customer
 				queries.push(
-					Order.findSameCustomer(req.params.orderID, params.customer)
+					Order.findSameCustomer(orderID, params.customer)
 				)
 			}*/
 			if (params.target) {
 				// Find similar target delivery date
-				queries.push(
-					Order.findNearbyDates(req.params.orderID, params.target)
-				)
+				queries.push(Order.findNearbyDates(orderID, params.target))
 			}
 			if (params.options) {
 				// Find similar options
-				queries.push(
-					Order.findSimilarOptions(req.params.orderID, params.options)
-				)
+				queries.push(Order.findSimilarOptions(orderID, params.options))
 			}
 			if (params.products) {
 				// Find similar products
 				queries.push(
 					Order.findSimilarProducts(
-						req.params.orderID,
+						orderID,
 						params.products.map((pid) =>
 							mongoose.Types.ObjectId(pid)
 						)

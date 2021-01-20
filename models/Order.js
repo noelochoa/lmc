@@ -759,6 +759,7 @@ orderSchema.statics.findNearbyDates = async function (oID, target) {
 }
 
 orderSchema.statics.findSimilarProducts = async function (oID, products) {
+	/*
 	const items = await Order.find({
 		_id: { $ne: oID },
 		'products.product': { $in: products }
@@ -767,7 +768,76 @@ orderSchema.statics.findSimilarProducts = async function (oID, products) {
 		.populate('status', 'status')
 		.sort({ target: -1 })
 		.limit(5)
-		.lean()
+		.lean()*/
+
+	const items = await Order.aggregate([
+		{
+			$match: { _id: { $ne: oID }, 'products.product': { $in: products } }
+		},
+		{
+			$lookup: {
+				from: OrderStatus.collection.name,
+				localField: 'status',
+				foreignField: '_id',
+				as: 'status'
+			}
+		},
+		{
+			$lookup: {
+				from: Customer.collection.name,
+				localField: 'customer',
+				foreignField: '_id',
+				as: 'customer'
+			}
+		},
+		{ $match: { 'status.step': { $in: [1, 2] } } }, // accepted / preparing / finalizing
+		{
+			$project: {
+				id: '$_id',
+				ordernum: 1,
+				status: {
+					$arrayElemAt: [
+						{
+							$map: {
+								input: '$status',
+								as: 'status',
+								in: {
+									id: '$$status._id',
+									status: '$$status.status'
+								}
+							}
+						},
+						0
+					]
+				},
+				target: 1,
+				total: 1,
+				deliveryType: 1,
+				customer: {
+					$arrayElemAt: [
+						{
+							$map: {
+								input: '$customer',
+								as: 'customer',
+								in: {
+									id: '$$customer._id',
+									firstname: '$$customer.firstname',
+									lastname: '$$customer.lastname'
+								}
+							}
+						},
+						0
+					]
+				}
+			}
+		},
+		{
+			$sort: { target: -1 }
+		},
+		{
+			$limit: 5
+		}
+	])
 	items.forEach((item) => {
 		item.orderRef = buildOrderNum(item.created, item.ordernum)
 	})
@@ -775,7 +845,7 @@ orderSchema.statics.findSimilarProducts = async function (oID, products) {
 }
 
 orderSchema.statics.findSimilarOptions = async function (oID, options) {
-	const items = await Order.find(
+	/*const items = await Order.find(
 		{
 			_id: { $ne: oID },
 			$text: { $search: options }
@@ -786,7 +856,73 @@ orderSchema.statics.findSimilarOptions = async function (oID, options) {
 		.populate('status', 'status')
 		.sort({ score: { $meta: 'textScore' } })
 		.limit(5)
-		.lean()
+		.lean()*/
+	const items = await Order.aggregate([
+		{ $match: { $text: { $search: options }, _id: { $ne: oID } } },
+		{
+			$lookup: {
+				from: OrderStatus.collection.name,
+				localField: 'status',
+				foreignField: '_id',
+				as: 'status'
+			}
+		},
+		{
+			$lookup: {
+				from: Customer.collection.name,
+				localField: 'customer',
+				foreignField: '_id',
+				as: 'customer'
+			}
+		},
+		{ $match: { 'status.step': { $in: [1, 2] } } }, // accepted / preparing / finalizing
+		{
+			$sort: { score: { $meta: 'textScore' } }
+		},
+		{
+			$project: {
+				id: '$_id',
+				ordernum: 1,
+				status: {
+					$arrayElemAt: [
+						{
+							$map: {
+								input: '$status',
+								as: 'status',
+								in: {
+									id: '$$status._id',
+									status: '$$status.status'
+								}
+							}
+						},
+						0
+					]
+				},
+				target: 1,
+				total: 1,
+				deliveryType: 1,
+				customer: {
+					$arrayElemAt: [
+						{
+							$map: {
+								input: '$customer',
+								as: 'customer',
+								in: {
+									id: '$$customer._id',
+									firstname: '$$customer.firstname',
+									lastname: '$$customer.lastname'
+								}
+							}
+						},
+						0
+					]
+				}
+			}
+		},
+		{
+			$limit: 5
+		}
+	])
 	items.forEach((item) => {
 		item.orderRef = buildOrderNum(item.created, item.ordernum)
 	})
